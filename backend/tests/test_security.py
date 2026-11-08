@@ -11,6 +11,8 @@ from __future__ import annotations
 from dataclasses import replace
 from pathlib import Path
 
+import sys
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -319,6 +321,9 @@ def test_within_rejects_absolute_path_replacement(fake_dist):
     assert _within(fake_dist, str(outside)) is None
 
 
+@pytest.mark.skipif(
+    sys.platform != "win32", reason="反斜杠分隔符是 Windows 路径语义，Linux 上不是遍历"
+)
 def test_within_rejects_backslash_traversal(fake_dist):
     """Windows 的反斜杠也是分隔符：`..\\..` 与 `../..` 等价，必须一起挡。"""
     assert _within(fake_dist, "..\\secret-outside-dist.txt") is None

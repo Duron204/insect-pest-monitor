@@ -18,6 +18,8 @@ import shutil
 import subprocess
 from pathlib import Path
 
+import sys
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -90,6 +92,10 @@ def test_host_status_shape_is_complete(client: TestClient, auth_headers):
 @pytest.mark.skipif(
     shutil.which("vcgencmd") is not None,
     reason="本机有 vcgencmd（真树莓派），降级断言不适用",
+)
+@pytest.mark.skipif(
+    sys.platform == "linux" and Path("/run/systemd/system").exists(),
+    reason="Linux CI 自带 systemd，Pi 字段会读到真实值而非 None（判定按 systemd 可用性）",
 )
 def test_pi_only_fields_degrade_to_none_not_zero(client: TestClient, auth_headers):
     """没有 vcgencmd 的机器上：Pi 专属指标必须是 None，而不是 0。

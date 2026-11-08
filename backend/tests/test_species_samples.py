@@ -17,8 +17,13 @@ from app.services import species_samples
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DATASET_ROOT = PROJECT_ROOT / "datasets" / "InsectPest"
 
+# 注意必须同时检查 images：本仓库刻意不跟踪数据集图像（体积大），
+# 只跟踪 labels —— 于是 CI 上 labels 存在而 images 缺失，
+# 只查 labels 会把用例放进"假可跑"状态然后红掉（真实发生过）
 HAS_DATASET = DATASET_ROOT.is_dir() and any(
-    (DATASET_ROOT / split / "labels").is_dir() for split in ("train", "valid", "test")
+    (DATASET_ROOT / split / "labels").is_dir()
+    and (DATASET_ROOT / split / "images").is_dir()
+    for split in ("train", "valid", "test")
 )
 needs_dataset = pytest.mark.skipif(not HAS_DATASET, reason="本机没有训练数据集，跳过参考图用例")
 
