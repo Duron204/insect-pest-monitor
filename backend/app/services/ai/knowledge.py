@@ -124,11 +124,11 @@ _lock = threading.Lock()
 # 积累起来既拖慢首字延迟又给对方添堵。冷却期一到自动重试，
 # 服务恢复后无需重启进程。
 _VECTOR_COOLDOWN_S = 300.0
-_vector_failed_at: float = 0.0
+_vector_failed_at: float | None = None  # None = 从未熔断（0.0 会在冷启动机器上误判）
 
 
 def _vector_available() -> bool:
-    return (time.monotonic() - _vector_failed_at) > _VECTOR_COOLDOWN_S
+    return _vector_failed_at is None or (time.monotonic() - _vector_failed_at) > _VECTOR_COOLDOWN_S
 
 
 @lru_cache(maxsize=1)
@@ -166,7 +166,7 @@ def reset_cache() -> None:
     global _vector_failed_at
     with _lock:
         _chunks.cache_clear()
-        _vector_failed_at = 0.0
+        _vector_failed_at = None
 
 
 def _lexical_scores(question: str, chunks: tuple[_Chunk, ...]) -> list[float]:
