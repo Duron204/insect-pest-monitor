@@ -316,7 +316,9 @@ def test_an_account_can_bind_a_simulated_pi_and_see_its_results(
 
     items = _wait_for(two_tasks, timeout=60, what="中心收到至少两次抓拍")
     assert [item["mode"] for item in items] == ["device", "device"]
-    assert agent.status()["uploads"] >= 2
+    # 计数与中心入库之间有天然竞态（中心先落库、代理收到响应后才 +1），
+    # 慢速 CI 上会先看到中心的 2 条再看到代理的计数 —— 用等待而不是裸断言
+    _wait_for(lambda: agent.status()["uploads"] >= 2, timeout=10, what="代理上传计数跟上")
 
     for item in items:
         detail = center.get(f"/api/tasks/{item['id']}", headers=headers)

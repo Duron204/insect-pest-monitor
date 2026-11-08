@@ -114,6 +114,9 @@ def test_auto_falls_back_to_next_backend_when_first_cannot_deliver_frames(
     断言的是**真读出一帧**：能打开却读不出帧的源同样要被跳过。
     """
     picamera2_installed(cameras=0, open_raises=True)
+    # 本用例测的是“opencv 失败要被记录/上报”：强制它进候选链，
+    # 否则 Linux 无摄像头机器上 opencv 根本不在链里，测不到这一级
+    monkeypatch.setattr(local_camera_module, "_opencv_available", lambda: True)
     monkeypatch.setattr(
         local_camera_module.OpenCvSource,
         "open",
@@ -149,6 +152,9 @@ def test_no_usable_source_reports_every_attempt(
     empty = tmp_path / "empty_sim2"
     empty.mkdir()
     picamera2_installed(cameras=0, open_raises=True)
+    # 本用例测的是“opencv 失败要被记录/上报”：强制它进候选链，
+    # 否则 Linux 无摄像头机器上 opencv 根本不在链里，测不到这一级
+    monkeypatch.setattr(local_camera_module, "_opencv_available", lambda: True)
     monkeypatch.setattr(
         local_camera_module.OpenCvSource,
         "open",

@@ -249,6 +249,19 @@ class SimulatedSource:
 
 
 # ---------------------------------------------------------------- 服务
+def _opencv_available() -> bool:
+    """opencv 是否应进入 auto 候选链。
+
+    opencv 的"可用"只代表 cv2 能导入，设备能否打开要开了才知道；
+    但相对 simulated 它更接近真实部署，所以优先。
+    Windows 开发机上 /dev 不存在 → 恒为 True；Linux 上只有真的有
+    V4L2 节点（/dev/video*）才进链 —— CI 的无摄像头 runner 因此
+    不试 opencv。提成模块级函数是为了让测试能注入（否则那几个
+    "回退要报原因"的用例在 Linux 上测不到 opencv 这一级）。
+    """
+    return not Path("/dev").exists() or any(Path("/dev").glob("video*"))
+
+
 class LocalCameraService:
     """本机摄像头的定时抓拍与状态管理。"""
 
@@ -337,9 +350,7 @@ class LocalCameraService:
         order: list[str] = []
         if _probe_picamera2()[0]:
             order.append("picamera2")
-        # opencv 的"可用"只代表 cv2 能导入，设备能否打开要开了才知道；
-        # 但相对 simulated 它更接近真实部署，所以优先。
-        if not Path("/dev").exists() or any(Path("/dev").glob("video*")):
+        if _opencv_available():
             order.append("opencv")
         order.append("simulated")
         return order
