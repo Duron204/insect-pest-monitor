@@ -43,6 +43,8 @@ logs/
 #   git rm -r --cached backend/data
 backend/data/
 *.sqlite3
+# 根目录的旧桌面端账号库（迁移用的遗留物，与 backend/data/app.db 无关）
+/UserDatabase.db
 
 # 桌面端保存的产物（直接写 cwd）
 pic_*.png
