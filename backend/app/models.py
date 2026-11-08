@@ -461,3 +461,84 @@ class Species(Base):
 
     def __repr__(self) -> str:
         return f"<Species {self.class_id} {self.zh_name}>"
+
+
+# ---------------------------------------------------------------- AI 助手
+class AiConversation(Base):
+    """一次 AI 对话会话。
+
+    账号**私有**（owner_id 非空、CASCADE）：对话内容可能含田间位置与经营
+    信息，不像"无主的公共检测数据"那样可以共享。删除账号连带给掉。
+    """
+
+    __tablename__ = "ai_conversations"
+    __table_args__ = (Index("ix_ai_conv_owner", "owner_id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    owner_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    # 首条问题截断而来，列表展示用；不做编辑入口（保持"会话即问句"的简单语义）
+    title: Mapped[str] = mapped_column(String(128), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
+
+    def __repr__(self) -> str:
+        return f"<AiConversation {self.id} user={self.owner_id}>"
+
+
+class AiMessage(Base):
+    """会话里的一条消息，**兼作 LLM 用量观测的记账行**。
+
+    token / 耗时 / 模型名直接记在消息上而不是独立的 ai_usage 表：
+    用量汇总就是对本表 GROUP BY，一份数据两用（对话回放 + 成本审计），
+    少一张表也少一次"两条记录对不上"的机会。
+    """
+
+    __tablename__ = "ai_messages"
+    __table_args__ = (Index("ix_ai_msg_conv", "conversation_id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    conversation_id: Mapped[int] = mapped_column(
+        ForeignKey("ai_conversations.id", ondelete="CASCADE"), nullable=False
+    )
+    role: Mapped[str] = mapped_column(String(16))  # user | assistant
+    content: Mapped[str] = mapped_column(Text)
+    # 检索到的知识块（引用徽标回放用），JSON 数组；user 消息为 NULL
+    citations_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    elapsed_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    prompt_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    completion_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    total_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    model: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+    def __repr__(self) -> str:
+        return f"<AiMessage {self.id} {self.role} conv={self.conversation_id}>"
+
+
+class AiReport(Base):
+    """一份 LLM 生成的虫情诊断报告（快照）。
+
+    报告是对"生成那一刻"数据的判断，之后新检测不会回填 ——
+    所以存 content 全文而不是重新算。导出 Word 时从这份快照渲染。
+    """
+
+    __tablename__ = "ai_reports"
+    __table_args__ = (Index("ix_ai_report_owner", "owner_id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    owner_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    range_token: Mapped[str] = mapped_column(String(8), default="7d")
+    title: Mapped[str] = mapped_column(String(128), default="")
+    content: Mapped[str] = mapped_column(Text)
+    prompt_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    completion_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    total_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    elapsed_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+    def __repr__(self) -> str:
+        return f"<AiReport {self.id} {self.range_token} user={self.owner_id}>"

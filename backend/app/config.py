@@ -163,6 +163,46 @@ class AuthConfig:
 
 
 @dataclass(frozen=True)
+class AIConfig:
+    """LLM 助手（RAG 问答）配置。
+
+    **默认 enabled=False**：没有 key 时所有 AI 接口返回 503（带配置指引），
+    而不是启动报错 —— 系统的其他功能不应该依赖一个外部大模型服务。
+    provider 走 OpenAI 兼容协议（智谱 GLM / DeepSeek / Ollama 均可），
+    不引入 SDK：httpx 已是测试依赖，多一个 SDK 就多一份版本耦合。
+    """
+
+    enabled: bool = False
+    # OpenAI 兼容端点，如 https://open.bigmodel.cn/api/paas/v4（不带 /chat/completions）
+    base_url: str = ""
+    api_key: str = ""            # 建议留空，用环境变量 INSECT_AI_API_KEY 注入
+    model: str = "glm-4-flash"
+    temperature: float = 0.3
+    max_tokens: int = 1200
+    timeout_s: float = 60.0
+    # 发给模型的历史**消息条数**上限（一轮对话 = 2 条）。防上下文
+    # 爆炸 + 控制成本；聊天页本身保留全部会话供回看，这里只管发出去的
+    history_limit: int = 8
+    # 检索注入的知识块数。语料一共 ~60 块，top 4 已覆盖单一物种的
+    # 危害+防治，更多只会稀释"实时虫情"上下文的权重
+    context_top_k: int = 4
+    # 词法评分低于该值视为"没检到"，宁可不给知识上下文
+    # 也不要塞一段不相关的档案诱导模型硬答
+    knowledge_min_score: float = 0.12
+    # ---- 混合检索（向量 + 词法）----
+    # 向量是语义路（"叶子上密密麻麻的小虫"也能命中蚜虫档案），
+    # 词法是精确路（名称/寄主词直呼）。两路并行、向量挂了自动降级
+    vector_search: bool = True
+    embedding_model: str = "embedding-3"   # GLM 默认；OpenAI 端点换 text-embedding-3-small
+    # 向量相似度折算成分的系数：cos 0.6 ≈ +2.4 分，与"名称直呼 +3"同量级
+    vector_weight: float = 4.0
+    embedding_batch_size: int = 32
+    # cos 低于该死区时向量分记 0：无关问题（"你好"）对任何档案都有 0.3~0.4 的
+    # 底噪相似度，不设死区它们会被全部检出
+    vector_deadzone: float = 0.35
+
+
+@dataclass(frozen=True)
 class Settings:
     project_root: Path = PROJECT_ROOT
     # 做成字段而非属性，测试里可指向临时目录，避免污染真实数据目录
@@ -176,6 +216,7 @@ class Settings:
     storage: StorageConfig = field(default_factory=StorageConfig)
     tracking: TrackingConfig = field(default_factory=TrackingConfig)
     auth: AuthConfig = field(default_factory=AuthConfig)
+    ai: AIConfig = field(default_factory=AIConfig)
     # 设备上传图片策略：always | on_detect | thumb_only（田间省流量，见计划 §8.5）
     upload_policy: str = "on_detect"
 
@@ -254,6 +295,7 @@ SECTION_TYPES: dict[str, type] = {
     "storage": StorageConfig,
     "tracking": TrackingConfig,
     "auth": AuthConfig,
+    "ai": AIConfig,
 }
 
 
@@ -307,6 +349,7 @@ def load_settings(config_path: Path | str | None = None) -> Settings:
         storage=_sub(StorageConfig, raw.get("storage")),
         tracking=_sub(TrackingConfig, raw.get("tracking")),
         auth=_sub(AuthConfig, raw.get("auth")),
+        ai=_sub(AIConfig, raw.get("ai")),
         upload_policy=str(raw.get("upload_policy", "on_detect")),
     )
 
@@ -333,4 +376,16 @@ def load_settings(config_path: Path | str | None = None) -> Settings:
         object.__setattr__(settings.agent, "center_url", v)
     if v := os.environ.get("INSECT_AGENT_NAME"):
         object.__setattr__(settings.agent, "name", v)
+    # AI 助手：key 这类敏感值走环境变量（.env / systemd Environment=），
+    # 不落 config.yaml。enabled 也支持覆盖，方便"临时关掉"排障
+    if v := os.environ.get("INSECT_AI_API_KEY"):
+        object.__setattr__(settings.ai, "api_key", v)
+    if v := os.environ.get("INSECT_AI_BASE_URL"):
+        object.__setattr__(settings.ai, "base_url", v)
+    if v := os.environ.get("INSECT_AI_MODEL"):
+        object.__setattr__(settings.ai, "model", v)
+    if v := os.environ.get("INSECT_AI_ENABLED"):
+        object.__setattr__(
+            settings.ai, "enabled", v.strip().lower() in ("1", "true", "yes", "on")
+        )
     return settings

@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Generic, TypeVar
+from typing import Generic, Literal, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, model_serializer
 
@@ -652,3 +652,100 @@ class AgentStatusOut(BaseModel):
     last_error: str | None = None
     last_error_at: datetime | None = None
     uptime_s: float | None = None
+
+
+# ---------------------------------------------------------------- AI 助手
+class AiStatusOut(BaseModel):
+    """AI 助手可用性。`configured` 与 `enabled` 分开：
+    enabled 是开关（配置里显式关掉），configured 是"key/base_url 齐不齐"。
+    前端据此显示"未启用（去 config.yaml）"还是"未配置（去填 key）"。"""
+
+    enabled: bool
+    configured: bool
+    model: str
+
+
+class AiChatMessage(BaseModel):
+    """一轮历史消息（只收 user / assistant，system 由后端组装）。"""
+
+    role: Literal["user", "assistant"]
+    content: str = Field(min_length=1, max_length=2000)
+
+
+class AiChatIn(BaseModel):
+    question: str = Field(min_length=1, max_length=500, description="本轮问题")
+    # 传已有会话 = 追问；None = 新会话（由首问标题自动创建）
+    conversation_id: int | None = Field(default=None, description="会话 id；缺省新建")
+    history: list[AiChatMessage] = Field(
+        default_factory=list,
+        max_length=12,
+        description="最近对话（旧在前）。服务端仍会按 ai.history_limit 再截断",
+    )
+
+
+class AiCitationOut(BaseModel):
+    """一条知识引用。聊天流结束后随 done 事件下发，
+    前端渲染成可点击徽标 → 跳知识库卡片。"""
+
+    index: int
+    class_id: int
+    zh_name: str
+    en_name: str
+    field: str
+    field_label: str
+    text: str
+    score: float
+
+
+
+# ---------------------------------------------------------------- AI 助手·历史与用量
+class AiConversationOut(ORMModel):
+    """会话列表项。标题取首问截断，消息数用于列表弱化展示。"""
+
+    id: int
+    title: str
+    message_count: int = 0
+    created_at: datetime
+    updated_at: datetime
+
+
+class AiMessageOut(ORMModel):
+    id: int
+    role: Literal["user", "assistant"]
+    content: str
+    citations: list[AiCitationOut] = Field(default_factory=list)
+    elapsed_ms: int | None = None
+    total_tokens: int | None = None
+    created_at: datetime
+
+
+class AiUsageDayOut(BaseModel):
+    day: str
+    calls: int
+    total_tokens: int
+
+
+class AiUsageSummaryOut(BaseModel):
+    """LLM 用量汇总（按账号）。观测的是"助手到底花了多少"，不做配额限制。"""
+
+    calls: int
+    conversations: int
+    reports: int
+    prompt_tokens: int
+    completion_tokens: int
+    total_tokens: int
+    avg_elapsed_ms: int
+    by_day: list[AiUsageDayOut]
+
+
+class AiReportSummaryOut(ORMModel):
+    id: int
+    range_token: str
+    title: str
+    total_tokens: int | None = None
+    elapsed_ms: int | None = None
+    created_at: datetime
+
+
+class AiReportOut(AiReportSummaryOut):
+    content: str

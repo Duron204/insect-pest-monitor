@@ -67,3 +67,20 @@ auth:
 #   on_detect 仅检出目标时上传原图（默认）
 #   thumb_only 只传缩略图 + 结构化结果，原图留在边缘
 upload_policy: on_detect
+
+# ----------------------------------------------------------
+# AI 助手（RAG 问答）：未配置时聊天页显示配置指引，其余功能不受影响。
+# 走 OpenAI 兼容协议：智谱 GLM / DeepSeek / 本地 Ollama 均可。
+# api_key 建议不写在这里，用环境变量 INSECT_AI_API_KEY 注入。
+# ----------------------------------------------------------
+ai:
+  enabled: true
+  base_url: "https://open.bigmodel.cn/api/paas/v4"
+  api_key: ""            # 留空；环境变量 INSECT_AI_API_KEY 优先
+  model: "glm-4-flash"   # 智谱免费档；可换 glm-4-plus / deepseek-chat 等
+  temperature: 0.3
+  max_tokens: 1200
+  history_limit: 8       # 发给模型的历史消息条数（一轮=2条；页面会话不受限）
+  context_top_k: 4       # 检索注入的知识块数
+  vector_search: true     # 混合检索（向量+词法）；向量服务异常自动降级词法
+  embedding_model: "embedding-3"

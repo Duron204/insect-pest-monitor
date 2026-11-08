@@ -29,6 +29,7 @@ from .config import Settings, load_settings
 from .db import add_missing_columns, create_all, init_engine, session_factory
 from .media_guard import TaskMediaGuard
 from .routers import alerts as alerts_router
+from .routers import ai as ai_router
 from .routers import auth as auth_router
 from .routers import detection as detection_router
 from .routers import devices as devices_router
@@ -316,6 +317,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(plots_router.router, prefix="/api")
     app.include_router(local_camera_router.router, prefix="/api")
     app.include_router(alerts_router.router, prefix="/api")
+    app.include_router(ai_router.router, prefix="/api")
     # 绑定设备（账号下的树莓派）：配对码绑定、结果查询、实时画面。
     # 里面既有面向盒子的匿名接口，也有面向用户的登录接口，见该模块 docstring。
     app.include_router(devices_router.router, prefix="/api")
