@@ -39,8 +39,14 @@ jobs:
       - name: 安装依赖
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt -c constraints.txt
+          # 先装 CPU 版 torch：requirements 不含 torch，但 ultralytics 会拉它，
+          # 先装可避免解析到 CUDA 版（数 GB 下载）
           pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cpu
+          # 注意：刻意不用 -c constraints.txt —— 那份约束锁的是本机训练栈
+          # （numpy 2.5.2 无 cp311 轮子、torch 是 +cu118 本地标签），
+          # 在 Linux CI 上必然 ResolutionImpossible。Web 依赖的版本下限
+          # 在 requirements.txt 里已足够；CI 的 torch 走上面的 CPU 官方源。
+          pip install -r requirements.txt
           pip install 'ultralytics==8.3.203'
 
       - name: 跑测试
