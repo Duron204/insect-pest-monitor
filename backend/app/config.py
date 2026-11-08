@@ -164,10 +164,11 @@ class AuthConfig:
 
 @dataclass(frozen=True)
 class AIConfig:
-    """LLM 助手（RAG 问答）配置。
+    """LLM 助手（RAG 问答）的全局默认参数。
 
-    **默认 enabled=False**：没有 key 时所有 AI 接口返回 503（带配置指引），
-    而不是启动报错 —— 系统的其他功能不应该依赖一个外部大模型服务。
+    **接入凭证（base_url/api_key/model）不在这里**：每个账号在网页端
+    自己配置（BYOK，存 ai_user_config 表，见 services/ai/account.py）。
+    本段只提供温度/上限/检索参数等默认值，以及站长用的总开关 enabled。
     provider 走 OpenAI 兼容协议（智谱 GLM / DeepSeek / Ollama 均可），
     不引入 SDK：httpx 已是测试依赖，多一个 SDK 就多一份版本耦合。
     """
@@ -376,12 +377,10 @@ def load_settings(config_path: Path | str | None = None) -> Settings:
         object.__setattr__(settings.agent, "center_url", v)
     if v := os.environ.get("INSECT_AGENT_NAME"):
         object.__setattr__(settings.agent, "name", v)
-    # AI 助手：key 这类敏感值走环境变量（.env / systemd Environment=），
-    # 不落 config.yaml。enabled 也支持覆盖，方便"临时关掉"排障
-    if v := os.environ.get("INSECT_AI_API_KEY"):
-        object.__setattr__(settings.ai, "api_key", v)
-    if v := os.environ.get("INSECT_AI_BASE_URL"):
-        object.__setattr__(settings.ai, "base_url", v)
+    # AI 助手：接入凭证（base_url/api_key）由**每个账号在网页里自己配置**
+    # （BYOK，见 services/ai/account.py），不再支持全局/环境变量注入 ——
+    # 全局回退会让所有账号共用站长的密钥，违背账号隔离约定。
+    # 这里只保留默认模型与总开关的环境变量覆盖（部署排障用）。
     if v := os.environ.get("INSECT_AI_MODEL"):
         object.__setattr__(settings.ai, "model", v)
     if v := os.environ.get("INSECT_AI_ENABLED"):

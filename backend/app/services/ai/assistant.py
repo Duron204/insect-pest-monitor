@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from ...config import Settings
+from ...config import AIConfig, Settings
 from ...models import User, utcnow
 from ...schemas import AiChatMessage
 from .context import build_data_context, collect_summary
@@ -49,12 +49,12 @@ class ChatPlan:
 
 def build_chat_plan(
     settings: Settings,
+    cfg: AIConfig,  # 已按账号解析的配置（services/ai/account.resolve_ai_config）
     db,  # noqa: ANN001 - SQLAlchemy Session，避免循环导入用鸭子类型
     user: User,
     question: str,
     history: list[AiChatMessage],
 ) -> ChatPlan:
-    cfg = settings.ai
     clean_question = (question or "").strip()[:_MAX_QUESTION_CHARS]
 
     # 检索失败不致命：少了知识上下文，助手仍可基于实时数据作答。
@@ -150,6 +150,7 @@ class ReportPlan:
 
 def build_report_plan(
     settings: Settings,
+    cfg: AIConfig,  # 已按账号解析的配置
     db,  # noqa: ANN001 - SQLAlchemy Session
     user: User,
     range_token: str,
@@ -161,7 +162,6 @@ def build_report_plan(
     # 重点虫种的知识检索：用"类别名 + 防治"构造查询，
     # 而不是把整个知识库塞进去 —— 报告只关心本期实际发生的虫
     focus_names = [name for name, _count in summary.top_classes[:3]]
-    cfg = settings.ai
     chunks: list[RetrievedChunk] = []
     if focus_names:
         try:

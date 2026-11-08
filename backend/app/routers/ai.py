@@ -29,8 +29,12 @@ from sqlalchemy.orm import Session
 
 from ..config import Settings
 from ..deps import get_current_user, get_db, get_settings
-from ..models import AiConversation, AiMessage, AiReport, User
+from ..config import AIConfig
+from ..models import AiConversation, AiMessage, AiReport, AiUserConfig, User
 from ..schemas import (
+    AiAccountConfigIn,
+    AiAccountConfigOut,
+    AiAccountTestOut,
     AiChatIn,
     AiCitationOut,
     AiConversationOut,
@@ -41,8 +45,9 @@ from ..schemas import (
     AiUsageDayOut,
     AiUsageSummaryOut,
 )
+from ..services.ai.account import get_user_config, mask_key, resolve_ai_config
 from ..services.ai.assistant import build_chat_plan, build_report_plan
-from ..services.ai.provider import AiUnavailableError, is_configured, stream_chat
+from ..services.ai.provider import AiUnavailableError, stream_chat
 from ..services.ai.report_export import report_to_docx
 
 router = APIRouter(prefix="/ai", tags=["ai"])
@@ -70,13 +75,15 @@ def _conversation_or_404(db: Session, conversation_id: int, user: User) -> AiCon
 @router.get("/status", response_model=AiStatusOut)
 def ai_status(
     settings: Settings = Depends(get_settings),
-    _: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
 ) -> AiStatusOut:
-    cfg = settings.ai
+    # 账号级：configured 只看当前用户有没有自己的接入配置
+    cfg = resolve_ai_config(settings, db, user)
     return AiStatusOut(
-        enabled=cfg.enabled,
-        configured=is_configured(cfg),
-        model=cfg.model,
+        enabled=settings.ai.enabled,   # 全局总开关（站长可整体停用 AI 功能）
+        configured=cfg is not None,
+        model=cfg.model if cfg is not None else settings.ai.model,
     )
 
 
@@ -89,14 +96,12 @@ def ai_chat(
     user: User = Depends(get_current_user),
     settings: Settings = Depends(get_settings),
 ) -> StreamingResponse:
-    cfg = settings.ai
-    if not cfg.enabled:
-        raise _not_enabled("AI 助手未启用：请在 config.yaml 的 ai 段把 enabled 设为 true")
-    if not is_configured(cfg):
-        raise _not_enabled(
-            "AI 助手未配置完整：请在 config.yaml 的 ai 段填写 base_url，"
-            "并用环境变量 INSECT_AI_API_KEY 提供密钥"
-        )
+    # BYOK：凭证只认当前账号在网页里保存的配置，不做全局回退
+    cfg = resolve_ai_config(settings, db, user)
+    if not settings.ai.enabled:
+        raise _not_enabled("AI 助手已被管理员停用")
+    if cfg is None:
+        raise _not_enabled("AI 助手未配置：请在 AI 助手页点击「配置」，填写你自己的模型服务接入信息")
 
     # ---- 会话解析：追问 or 新建（首问截断当标题） ----
     if body.conversation_id is None:
@@ -113,7 +118,7 @@ def ai_chat(
     db.add(AiMessage(conversation_id=conversation.id, role="user", content=clean_question))
     db.commit()
 
-    plan = build_chat_plan(settings, db, user, body.question, body.history)
+    plan = build_chat_plan(settings, cfg, db, user, body.question, body.history)
     conversation_id = conversation.id
     conversation_title = conversation.title
     # 流里的写库用工厂新开会话（理由见模块 docstring）
@@ -351,11 +356,11 @@ def generate_report(
     range_token: str = "7d",
 ) -> StreamingResponse:
     """流式生成诊断报告；完成后落库为快照（见 AiReport 的说明）。"""
-    cfg = settings.ai
-    if not cfg.enabled or not is_configured(cfg):
-        raise _not_enabled("AI 助手未配置，无法生成报告（先完成 ai 段配置）")
+    cfg = resolve_ai_config(settings, db, user)
+    if not settings.ai.enabled or cfg is None:
+        raise _not_enabled("AI 助手未配置，无法生成报告（先在 AI 助手页完成接入配置）")
     token = range_token if range_token in ("7d", "30d") else "7d"
-    plan = build_report_plan(settings, db, user, token)
+    plan = build_report_plan(settings, cfg, db, user, token)
     session_factory = request.app.state.session_factory
     owner_id = user.id
 
@@ -481,3 +486,114 @@ def _urlquote(value: str) -> str:
     from urllib.parse import quote
 
     return quote(value)
+
+
+# ---------------------------------------------------------------- 账号级配置（BYOK）
+@router.get("/account", response_model=AiAccountConfigOut)
+def get_account_config(
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> AiAccountConfigOut:
+    """当前账号的接入配置（脱码回显）。完整密钥永不离开服务器。"""
+    row = get_user_config(db, user)
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="尚未配置")
+    return _account_out(row)
+
+
+@router.put("/account", response_model=AiAccountConfigOut)
+def save_account_config(
+    body: AiAccountConfigIn,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> AiAccountConfigOut:
+    """保存/更新本账号配置。
+
+    `api_key` 留空 = 保持原值（前端只显示脱码预览，改密钥才需要重填）；
+    首次配置必须给密钥。行级 owner 隔离：只写自己的行。
+    """
+    row = get_user_config(db, user)
+    if row is None:
+        row = AiUserConfig(user_id=user.id)
+        db.add(row)
+    row.base_url = body.base_url.strip()
+    row.model = body.model.strip()
+    if body.api_key.strip():
+        row.api_key = body.api_key.strip()
+    if not row.api_key:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="api_key 不能为空（首次配置必须填写密钥）",
+        )
+    db.commit()
+    db.refresh(row)
+    return _account_out(row)
+
+
+@router.delete("/account", status_code=status.HTTP_204_NO_CONTENT)
+def clear_account_config(
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> Response:
+    """清空本账号配置（AI 功能随之停用，历史会话保留）。"""
+    row = get_user_config(db, user)
+    if row is not None:
+        db.delete(row)
+        db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post("/account/test", response_model=AiAccountTestOut)
+def test_account_config(
+    body: AiAccountConfigIn,
+    settings: Settings = Depends(get_settings),
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> AiAccountTestOut:
+    """用提交的值试连模型服务（不必先保存）。
+
+    密钥留空时用已保存的值 —— 前端编辑场景里用户往往只想改 base_url。
+    返回 200 + ok=false 表示"连不上"，而不是 5xx：这是用户输入校验，
+    不是服务器故障。
+    """
+    if not body.api_key.strip():
+        row = get_user_config(db, user)
+        key = row.api_key if row is not None else ""
+    else:
+        key = body.api_key.strip()
+    if not body.base_url.strip() or not key:
+        return AiAccountTestOut(ok=False, message="base_url 与密钥都不能为空", latency_ms=0)
+
+    test_cfg = AIConfig(
+        enabled=True,
+        base_url=body.base_url.strip(),
+        api_key=key,
+        model=body.model.strip() or settings.ai.model,
+        temperature=0.0,
+        max_tokens=8,
+        timeout_s=min(settings.ai.timeout_s, 15.0),
+    )
+    started = time.monotonic()
+    try:
+        for _delta in stream_chat(
+            test_cfg, [{"role": "user", "content": "请只回复：ok"}]
+        ):
+            break  # 第一个增量到达即认为连通
+        return AiAccountTestOut(
+            ok=True, message="连接成功", latency_ms=int((time.monotonic() - started) * 1000)
+        )
+    except AiUnavailableError as exc:
+        return AiAccountTestOut(
+            ok=False, message=str(exc)[:200], latency_ms=int((time.monotonic() - started) * 1000)
+        )
+
+
+def _account_out(row: AiUserConfig) -> AiAccountConfigOut:
+    return AiAccountConfigOut(
+        base_url=row.base_url,
+        model=row.model,
+        api_key_preview=mask_key(row.api_key),
+        has_key=bool(row.api_key),
+        updated_at=row.updated_at,
+    )

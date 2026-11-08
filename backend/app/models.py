@@ -542,3 +542,32 @@ class AiReport(Base):
 
     def __repr__(self) -> str:
         return f"<AiReport {self.id} {self.range_token} user={self.owner_id}>"
+
+
+# ---------------------------------------------------------------- AI 助手·账号配置
+class AiUserConfig(Base):
+    """每个账号自己的大模型接入配置（BYOK：Bring Your Own Key）。
+
+    **为什么放账号级而不是全局**：部署上线时站长不必把自己的 key 分给
+    所有用户 —— 谁想用 AI 谁自己填。代价是密钥落库，这里做了两层缓解：
+    1. 接口**永不回传完整 key**（只回脱码预览，前端编辑时留空=不改）；
+    2. 行级 owner 隔离，别人的配置既查不到也用不了。
+    （更严的做法是用服务器密钥做对称加密落库；对单机自部署系统，
+    明文+脱码返回已把暴露面压到"拿到数据库文件"这一种情形。）
+    """
+
+    __tablename__ = "ai_user_config"
+    __table_args__ = (Index("uq_ai_user_config_user", "user_id", unique=True),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    # OpenAI 兼容端点（不带 /chat/completions）
+    base_url: Mapped[str] = mapped_column(String(256), default="")
+    api_key: Mapped[str] = mapped_column(String(256), default="")
+    model: Mapped[str] = mapped_column(String(128), default="")
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
+
+    def __repr__(self) -> str:
+        return f"<AiUserConfig user={self.user_id} model={self.model!r}>"

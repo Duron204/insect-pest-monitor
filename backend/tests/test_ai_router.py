@@ -32,11 +32,9 @@ def settings_ai_configured(tmp_path):
             uploads_dir=str(tmp_path / "uploads"),
         ),
         inference=replace(base.inference, preload=False),
+        # BYOK 之后全局不再有凭证：chat 能不能跑取决于账号是否在网页里配置
         ai=AIConfig(
             enabled=True,
-            base_url="http://mock.local/v1",
-            api_key="test-key",
-            model="mock-model",
             # 测试不碰外网：向量路关掉（provider 已被 mock，这里再关 embedding）
             vector_search=False,
         ),
@@ -57,18 +55,42 @@ def _auth(client: TestClient) -> dict[str, str]:
     return {"Authorization": f"Bearer {token}"}
 
 
+def _auth_with_ai(client: TestClient, username: str = "aiuser") -> dict[str, str]:
+    """注册 + 登录 + 在网页端保存 BYOK 配置（聊天接口的前置条件）。"""
+    creds = {"username": username, "password": f"{username}123456"}
+    client.post("/api/auth/register", json=creds)
+    token = client.post("/api/auth/login", json=creds).json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+    resp = client.put(
+        "/api/ai/account",
+        headers=headers,
+        json={"base_url": "http://mock.local/v1", "api_key": "test-key", "model": "mock-model"},
+    )
+    assert resp.status_code == 200
+    return headers
+
+
 # ---------------------------------------------------------------- 鉴权与状态
 def test_status_requires_auth(client):
     assert client.get("/api/ai/status").status_code == 401
 
 
-def test_status_reports_configuration(client):
+def test_status_reports_per_account_configuration(client):
+    """BYOK：status 的 configured 只看当前账号有没有自己的配置。"""
     headers = _auth(client)
     body = client.get("/api/ai/status", headers=headers).json()
-    # conftest 的 settings 来自真实 config.yaml：enabled=true 但 key 为空
     assert body["enabled"] is True
     assert body["configured"] is False
-    assert body["model"]
+    assert body["model"]  # 未配置时回显全局默认模型名
+
+    client.put(
+        "/api/ai/account",
+        headers=headers,
+        json={"base_url": "http://mock.local/v1", "api_key": "k", "model": "m1"},
+    )
+    body = client.get("/api/ai/status", headers=headers).json()
+    assert body["configured"] is True
+    assert body["model"] == "m1"
 
 
 # ---------------------------------------------------------------- 未配置降级
@@ -76,7 +98,7 @@ def test_chat_503_when_not_configured(client):
     headers = _auth(client)
     resp = client.post("/api/ai/chat", headers=headers, json={"question": "虫情如何"})
     assert resp.status_code == 503
-    assert "INSECT_AI_API_KEY" in resp.json()["detail"]
+    assert "配置" in resp.json()["detail"]
 
 
 def test_chat_503_when_disabled(client, monkeypatch):
@@ -102,7 +124,7 @@ def _fake_stream(chunks):
 
 def test_chat_streams_deltas_and_done(client_configured, monkeypatch):
     client, _ = client_configured
-    headers = _auth(client)
+    headers = _auth_with_ai(client)
     monkeypatch.setattr(
         ai_router, "stream_chat", _fake_stream(["近 7 天", "检出 12 只", "蚜虫。"])
     )
@@ -123,7 +145,7 @@ def test_chat_streams_deltas_and_done(client_configured, monkeypatch):
 
 def test_chat_error_event_mid_stream(client_configured, monkeypatch):
     client, _ = client_configured
-    headers = _auth(client)
+    headers = _auth_with_ai(client)
 
     def failing(config, messages, usage_out=None):
         yield "半段回答"
@@ -141,7 +163,7 @@ def test_chat_error_event_mid_stream(client_configured, monkeypatch):
 def test_chat_injects_data_context(client_configured, monkeypatch):
     """编排层必须把实时数据写进 system —— 这是"不许编数字"的物质基础。"""
     client, _ = client_configured
-    headers = _auth(client)
+    headers = _auth_with_ai(client)
     captured: dict = {}
 
     def fake(config, messages, usage_out=None):
@@ -158,7 +180,7 @@ def test_chat_injects_data_context(client_configured, monkeypatch):
 
 def test_chat_history_is_trimmed_and_passed(client_configured, monkeypatch):
     client, _ = client_configured
-    headers = _auth(client)
+    headers = _auth_with_ai(client)
     captured: dict = {}
 
     def fake(config, messages, usage_out=None):

@@ -23,10 +23,18 @@ def _fake_stream(texts, usage=None):
 
 
 def _auth(client: TestClient, username: str) -> dict[str, str]:
+    """注册 + 登录 + 网页端保存 BYOK 配置（这些用例都要真正发起对话）。"""
     creds = {"username": username, "password": f"{username}123456"}
     client.post("/api/auth/register", json=creds)
     token = client.post("/api/auth/login", json=creds).json()["access_token"]
-    return {"Authorization": f"Bearer {token}"}
+    headers = {"Authorization": f"Bearer {token}"}
+    resp = client.put(
+        "/api/ai/account",
+        headers=headers,
+        json={"base_url": "http://mock.local/v1", "api_key": "test-key", "model": "mock-model"},
+    )
+    assert resp.status_code == 200
+    return headers
 
 
 def _parse(resp) -> list[dict]:
@@ -218,6 +226,10 @@ def test_report_isolation(configured, monkeypatch):
 
 
 def test_report_requires_configuration(client):
-    headers = _auth(client, "rep3")
+    """未配置账号（_auth 会配置，这里手动注册一个干净账号）。"""
+    creds = {"username": "rep3", "password": "rep3123456"}
+    client.post("/api/auth/register", json=creds)
+    token = client.post("/api/auth/login", json=creds).json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
     resp = client.post("/api/ai/report", headers=headers)
     assert resp.status_code == 503

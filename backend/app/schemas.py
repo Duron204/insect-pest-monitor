@@ -749,3 +749,32 @@ class AiReportSummaryOut(ORMModel):
 
 class AiReportOut(AiReportSummaryOut):
     content: str
+
+
+# ---------------------------------------------------------------- AI 助手·账号配置
+class AiAccountConfigIn(BaseModel):
+    """网页端保存的每账号 AI 配置。
+
+    api_key 留空 = 保持原值不变（前端编辑时只显示脱码预览，改密钥才需要重填）；
+    想清空配置请走 DELETE /ai/account。
+    """
+
+    base_url: str = Field(min_length=1, max_length=256)
+    api_key: str = Field(default="", max_length=256)
+    model: str = Field(min_length=1, max_length=128)
+
+
+class AiAccountConfigOut(BaseModel):
+    """脱码回显：完整密钥永不离开服务器。"""
+
+    base_url: str
+    model: str
+    api_key_preview: str
+    has_key: bool
+    updated_at: datetime
+
+
+class AiAccountTestOut(BaseModel):
+    ok: bool
+    message: str
+    latency_ms: int
