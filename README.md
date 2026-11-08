@@ -5,7 +5,7 @@
 **一台树莓派，看住一片田 —— 边缘抓拍 · YOLO 检测 · RAG 植保助手**
 
 [![CI](https://github.com/Duron204/insect-pest-monitor/actions/workflows/ci.yml/badge.svg)](https://github.com/Duron204/insect-pest-monitor/actions/workflows/ci.yml)
-[![Backend Tests](https://img.shields.io/badge/pytest-440%20passed-2f9e5f)](backend/tests)
+[![Backend Tests](https://img.shields.io/badge/pytest-444%20passed-2f9e5f)](backend/tests)
 [![Frontend Tests](https://img.shields.io/badge/vitest-107%20passed-2f9e5f)](vue-frontend/src)
 [![License: MIT](https://img.shields.io/badge/License-MIT-2f9e5f.svg)](LICENSE)
 
@@ -91,6 +91,7 @@ flowchart LR
 | **引用溯源** | 检索块带 `[n]` 编号写进提示词；回答中的 `[n]` 与引用徽标可点击，直达知识库卡片 |
 | **反幻觉守卫** | 空数据上下文显式写"没有检测记录"；system 约束数字只能来自实时数据 |
 | **用量记账** | 每次调用 token/耗时/模型落库（`ai_messages` 兼作记账行），按账号聚合 |
+| **BYOK 账号级配置** | 凭证在网页端按账号配置（`ai_user_config`），站长无需分享密钥；未配置账号 AI 不可用，密钥脱码回显 |
 
 ## 技术栈
 
@@ -115,15 +116,16 @@ npm run dev                # Vite :3000，代理 /api 到 :8000
 build_frontend.bat
 ```
 
-**AI 助手**（不配置不影响其他功能）：`config.yaml` 的 `ai` 段填好 `base_url` 与
-`model`，再设置环境变量 `INSECT_AI_API_KEY`（智谱 / DeepSeek 等 OpenAI 兼容服务均可）。
+**AI 助手**（BYOK，不配置不影响其他功能）：登录后进入「AI 助手」页点「配置」，
+填入你自己的 OpenAI 兼容服务地址、密钥与模型名（智谱 / DeepSeek / Ollama 均可）。
+凭证按账号存储、互不可见、接口永不回传明文。
 
 **树莓派部署**：见 [deploy/README-pi.md](deploy/README-pi.md)（systemd + 看门狗 + 维护定时器）。
 
 ## 测试与质量
 
 ```powershell
-cd backend  && python -m pytest tests/ -q     # 440 项（含 36 项 AI 专项）
+cd backend  && python -m pytest tests/ -q     # 444 项（含 40 项 AI 专项：检索/账号配置/会话/用量/报告）
 cd vue-frontend && npm run test               # 107 项
 cd vue-frontend && npm run build              # 含 vue-tsc 类型检查
 ```

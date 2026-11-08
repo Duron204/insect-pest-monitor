@@ -44,17 +44,25 @@ routers/ai.py ── services/ai/assistant.py（组装上下文与提示词）
 | 安全 | 复用 get_current_user；问题 ≤500 字；历史 ≤12 条；纯检索+生成，无工具执行面 |
 | 流式协议 | SSE：`delta{text}` → `done{citations, elapsed_ms}` / `error{message}`；前端 fetch + ReadableStream 手工解析 |
 
-## 三、配置（config.yaml）
+## 三、配置（BYOK：每个账号在网页里自己配）
+
+接入凭证（base_url / api_key / model）**不在配置文件里**——每个账号在
+AI 助手页的「配置」表单里填写，存数据库 `ai_user_config` 表：
+
+- 谁想用谁配：没配置的账号 AI 不可用（503 + 表单指引），账号之间互不可见
+- 接口**永不回传完整密钥**（只回脱码预览 `ab****5678`；编辑时留空=保持原值）
+- 部署者无需把自己的 key 分给用户；清除配置只停用 AI，历史会话保留
+- 支持"测试连接"（用表单值轻量试连，不必先保存）
+
+config.yaml 的 `ai` 段只保留**全局默认参数**与站长总开关：
 
 ```yaml
 ai:
-  enabled: true
-  base_url: https://open.bigmodel.cn/api/paas/v4   # 任意 OpenAI 兼容端点
-  api_key: ""            # 建议留空，用环境变量 INSECT_AI_API_KEY
-  model: glm-4-flash
+  enabled: true          # 总开关：站长可整体停用 AI 功能
+  model: glm-4-flash     # 新账号的默认模型名（可被账号配置覆盖）
   temperature: 0.3
   max_tokens: 1200
-  history_limit: 6       # 多轮对话最多带几轮
+  history_limit: 8       # 发给模型的历史消息条数（一轮=2条；页面会话不受限）
   context_top_k: 4       # 检索注入的知识块数
 ```
 
