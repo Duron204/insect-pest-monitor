@@ -15,7 +15,8 @@ const FALLBACK = {
   panel: '#16211b',
   warn: '#e8a33d',
   info: '#4a90d9',
-  danger: '#d9534f'
+  danger: '#d9534f',
+  series: ['#2f9e5f', '#4fc07e', '#e8a33d', '#4a90d9', '#8e6fd0', '#c0556f', '#3fb0a5', '#9bb43a']
 }
 
 export interface ChartPalette {
@@ -52,16 +53,10 @@ export function useChartTheme() {
       warn: readVar('--ip-warn', FALLBACK.warn),
       info: readVar('--ip-info', FALLBACK.info),
       danger: readVar('--ip-danger', FALLBACK.danger),
-      series: [
-        readVar('--ip-primary', FALLBACK.primary),
-        '#4fc07e',
-        readVar('--ip-warn', FALLBACK.warn),
-        '#4a90d9',
-        '#8e6fd0',
-        '#c0556f',
-        '#3fb0a5',
-        '#9bb43a'
-      ]
+      // 色板全部走令牌：主题切换时自动换一套适配浅底的色值
+      series: [1, 2, 3, 4, 5, 6, 7, 8].map((i) =>
+        readVar(`--ip-chart-${i}`, FALLBACK.series[i - 1] ?? FALLBACK.primary)
+      )
     }
   }
 

@@ -270,3 +270,127 @@
 .el-upload-dragger:hover {
   border-color: var(--ip-primary);
 }
+
+/* ================= 精修层（2026-11-08 前端美化） =================
+   原则：全部走既有令牌；只做"质感与反馈"，不改布局与信息结构。
+   这一段影响全站每一个 ElButton / ElTabs / ElTag / 输入框聚焦态。 */
+
+/* ---- 主按钮：苔绿微渐变 + 悬停上浮 + 按压回位 ----
+   Element 默认是纯平色块，hover 只换底色。这里给"可按下"的物理感：
+   渐变只有上下 6% 的明度差（避免变成糖果按钮），阴影一档很轻。 */
+.el-button--primary {
+  background: linear-gradient(180deg, var(--ip-primary-hover), var(--ip-primary) 88%);
+  border-color: var(--ip-primary-active);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.09) inset,
+    0 1px 2px rgba(6, 10, 8, 0.28);
+  transition:
+    transform var(--ip-dur-fast) var(--ip-ease),
+    box-shadow var(--ip-dur-fast) var(--ip-ease),
+    filter var(--ip-dur-fast) var(--ip-ease);
+
+  &:hover,
+  &:focus-visible {
+    background: linear-gradient(180deg, var(--ip-primary-hover), var(--ip-primary) 88%);
+    filter: brightness(1.05);
+    transform: translateY(-1px);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.12) inset,
+      0 3px 8px var(--ip-primary-glow);
+  }
+
+  &:active {
+    transform: translateY(0);
+    filter: brightness(0.96);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset;
+  }
+}
+
+/* 次级按钮：hover 描边染绿，保持安静 */
+.el-button--default {
+  transition:
+    border-color var(--ip-dur-fast) var(--ip-ease),
+    color var(--ip-dur-fast) var(--ip-ease),
+    transform var(--ip-dur-fast) var(--ip-ease);
+
+  &:hover {
+    border-color: var(--ip-primary-line);
+    color: var(--ip-primary-hover);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+/* ---- 标签页：活动条动画 + item 过渡 ---- */
+.el-tabs {
+  &__item {
+    transition: color var(--ip-dur-fast) var(--ip-ease);
+    font-size: var(--ip-fs-sm);
+
+    &.is-active {
+      color: var(--ip-primary);
+      font-weight: 600;
+    }
+  }
+
+  &__active-bar {
+    height: 2px;
+    border-radius: 2px;
+    background: var(--ip-primary);
+    transition:
+    transform var(--ip-dur) var(--ip-ease),
+    width var(--ip-dur) var(--ip-ease);
+  }
+
+  &__nav-wrap::after {
+    height: 1px;
+    background: var(--ip-line-soft);
+  }
+}
+
+/* ---- 输入聚焦：内描边之外补一圈 3px 光环 ----
+   纯内描边在深色底上不显眼，光环让"焦点在哪"一眼可辨 */
+.el-input__wrapper.is-focus,
+.el-select__wrapper.is-focused {
+  box-shadow:
+    0 0 0 1px var(--ip-primary) inset,
+    0 0 0 3px var(--ip-primary-weak);
+}
+
+.el-textarea__inner:focus {
+  box-shadow:
+    0 0 0 1px var(--ip-primary) inset,
+    0 0 0 3px var(--ip-primary-weak);
+}
+
+/* ---- 状态标签：改胶囊形，行高与字距对齐令牌 ---- */
+.el-tag {
+  border-radius: 999px;
+  padding: 0 10px;
+  font-size: var(--ip-fs-xs);
+  line-height: 22px;
+  letter-spacing: 0.02em;
+}
+
+/* ---- 弹窗 / 抽屉：圆角抬一档，阴影走令牌 ---- */
+.el-dialog {
+  border-radius: var(--ip-radius-xl);
+  box-shadow: var(--ip-shadow-md);
+}
+
+.el-drawer {
+  box-shadow: var(--ip-shadow-md);
+}
+
+.el-message {
+  border-radius: var(--ip-radius);
+}
+
+/* ---- 下拉浮层：描边 + 阴影统一 ---- */
+.el-dropdown-menu,
+.el-select__popper {
+  border-radius: var(--ip-radius);
+  box-shadow: var(--ip-shadow-md);
+}

@@ -3,6 +3,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElButton, ElForm, ElFormItem, ElInput, ElTabPane, ElTabs } from 'element-plus'
 import ErrorBanner from '@/components/common/ErrorBanner.vue'
+import LoginHeroArt from '@/components/login/LoginHeroArt.vue'
 import { useUserStore } from '@/stores/user'
 import { useUiStore } from '@/stores/ui'
 import { notifySuccess } from '@/utils/notify'
@@ -177,12 +178,14 @@ async function onRegister(): Promise<void> {
         </div>
         </div>
 
+        <LoginHeroArt />
+
         <h2 class="login-view__hero-title">一台树莓派，看住一片田</h2>
         <ul class="login-view__hero-points">
           <li>本机摄像头按间隔自动抓拍，<b>断网也能跑</b></li>
           <li>ONNX 推理跑在树莓派 CPU 上，不需要额外显卡</li>
           <li>历史记录 · 统计看板 · 报告导出（xlsx / docx / html）</li>
-          <li>15 类害虫的危害特征与防治参考</li>
+          <li><b>AI 植保助手</b>：结合实时虫情与 15 类知识库给防治建议</li>
         </ul>
         <p class="login-view__hero-foot">采集 → 推理 → 看板，全部在同一台设备上完成</p>
       </aside>

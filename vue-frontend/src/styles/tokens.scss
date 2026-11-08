@@ -35,6 +35,18 @@
   --ip-primary-line: rgba(47, 158, 95, 0.42);
   --ip-primary-glow: rgba(47, 158, 95, 0.25);
 
+  /* ---- 图表分类色板 ----
+     分类饼图/趋势线的系列色。与语义色分开：图表需要的是
+     "彼此可区分"，而语义色承担"对错高低"的含义，混用会误导读图 */
+  --ip-chart-1: #2f9e5f;
+  --ip-chart-2: #4fc07e;
+  --ip-chart-3: #e8a33d;
+  --ip-chart-4: #4a90d9;
+  --ip-chart-5: #8e6fd0;
+  --ip-chart-6: #c0556f;
+  --ip-chart-7: #3fb0a5;
+  --ip-chart-8: #9bb43a;
+
   /* ---- 告警（琥珀） ---- */
   --ip-warn: #e8a33d;
   --ip-warn-weak: rgba(232, 163, 61, 0.14);
@@ -119,6 +131,15 @@
   --ip-primary-weak: rgba(36, 128, 75, 0.1);
   --ip-primary-line: rgba(36, 128, 75, 0.36);
   --ip-primary-glow: rgba(36, 128, 75, 0.18);
+
+  --ip-chart-1: #24804b;
+  --ip-chart-2: #2f9e5f;
+  --ip-chart-3: #b9761a;
+  --ip-chart-4: #2b6fb0;
+  --ip-chart-5: #6d55a8;
+  --ip-chart-6: #a34a5e;
+  --ip-chart-7: #2f8a80;
+  --ip-chart-8: #7a8f2e;
 
   --ip-warn: #b9761a;
   --ip-warn-weak: rgba(185, 118, 26, 0.12);
