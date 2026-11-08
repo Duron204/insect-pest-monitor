@@ -1,0 +1,120 @@
+# ==========================================================
+# 树莓派 5 现场配置模板
+#
+#   cp deploy/config.pi.yaml config.yaml
+#
+# 与开发机配置的差别只有三处（都关系到现场能不能用）：
+#   1. inference.backend = onnx     改用 ONNX Runtime，不装 torch
+#   2. server.host = 0.0.0.0        让局域网里的手机能访问
+#   3. stream.target_fps 下调        4 核 CPU 带不动 10fps 的实时流
+#
+# 另有一个 agent: 块（边缘代理，默认 enabled: false），作用是把这台盒子挂到
+# 某个账号下，远程看它的识别结果与实时画面。**不改它就不产生任何影响**。
+#
+# 优先级：环境变量 > 本文件 > 代码默认值。
+# systemd 单元里已用环境变量指定后端，这里保持一致即可。
+# ==========================================================
+
+server:
+  host: 0.0.0.0            # 现场：手机/便携机需从局域网访问
+  port: 8000
+  serve_frontend: true     # 由后端托管 vue-frontend/dist（同源，免 CORS）
+  reload: false
+
+database:
+  url: sqlite:///./backend/data/app.db
+
+inference:
+  backend: onnx
+  # 在本机用 run_export_model.py 导出后拷贝到该路径
+  default_model: weights/edge/best-yolo11s-640.onnx
+  conf: 0.25
+  iou: 0.5
+  imgsz: 640
+  device: cpu              # 树莓派 5 无 CUDA；写 auto 也会落到 cpu
+  max_det: 300
+  heatmap: false           # ONNX 后端不提供热力图（需中间层输出，属 torch 专属）
+  preload: true            # 启动即加载，避免首帧慢
+
+# 树莓派本机直连摄像头：这一路让盒子自己定时拍照，不需要额外的采集节点。
+local_camera:
+  enabled: true            # 树莓派上通常就靠它产生图像
+  backend: auto            # auto 会优先用 picamera2（Pi 排线摄像头），否则 opencv（USB）
+  device: "0"              # USB 摄像头：0 或 /dev/video0；picamera2 忽略此项
+  width: 1280
+  height: 720
+  # 与设备上报的采集间隔含义一致。树莓派 5 单帧 ONNX 推理约 0.25~0.4 秒，
+  # 但拍照（尤其 picamera2 启动）+ 推理合起来仍建议不要短于 5 分钟，
+  # 否则连续抓拍会把 CPU 占满、温度上升触发降频。
+  interval_min: 30
+  conf: 0.25
+  iou: 0.5
+  warmup_frames: 5         # CSI 摄像头刚启动时 AGC/AWB 未收敛，前几帧偏色
+  simulated_dir: test_media  # 仅 backend=simulated 时用（例如无摄像头的演示）
+
+# ----------------------------------------------------------
+# 边缘代理：把这台盒子挂到某个账号下，远程看识别结果与实时画面
+#
+# 打开之前先想清楚它的形状：**所有连接都是这台盒子主动拨出去的**，
+# 中心从不反向连盒子。所以：
+#   * 不需要端口映射、frp、内网穿透 —— 只要盒子能 ping 通中心的地址；
+#   * 从局域网换到公网，**只需改 center_url 一个值**，前端与中心代码都不用动；
+#   * 中心不可达时盒子照常抓拍推理，结果排队重发（进程内最多 8 条）。
+#
+# ★ 启用后会**取代**上面 local_camera 的定时抓拍：摄像头只有一个，
+#   两个调度器各抓各的会让同一帧被推理两次、每个间隔产出两条任务。
+#   所以 local_camera.enabled 保持 true 仍然有意义 —— 代理复用的正是它
+#   的取帧与推理，只是把结果发给了中心而不是存在本机。
+#
+# 绑定时盒子会在日志里打印一个 6 位配对码，登录中心网页 → 「我的设备」→
+# 「绑定设备」把码填进去即可。详见 deploy/README-pi.md 的 §2.9。
+# ----------------------------------------------------------
+agent:
+  enabled: false           # 默认关闭。不配置时后端行为与从前完全一致
+  # ★ 填**中心**那台机器的地址（跑网页的那台电脑/服务器），不是本机地址。
+  #   局域网阶段就是它的内网 IP，例如 http://192.168.1.20:8000
+  center_url: "http://192.168.1.20:8000"
+  name: ""                 # 网页上显示的名字；留空则用 hostname
+  hardware_id: ""          # 留空则从 /proc/cpuinfo 的 Serial 派生（同一台盒子认得出）
+  stream_enabled: true     # 关掉就只上报定时抓拍、不推实时画面
+  stream_fps: 2            # 推流帧率。默认这一路只传原始 JPEG、**不跑推理**，
+                           # 2 fps 已足够"看现场"；调高只会占 CPU 与上行带宽。
+                           # 在本机设置页开启「实时识别」后每帧都会推理并画框，
+                           # 此时帧率自动限制为 2（min(stream_fps, 2)）
+  stream_quality: 70
+  stream_width: 960        # 推流前等比缩到该宽度（定时抓拍上报的原图不缩）
+  capture_interval_min: 0  # 0 = 沿用 local_camera.interval_min（推荐）
+  request_timeout_s: 20.0
+  reconnect_max_s: 60.0    # 断线退避上限。中心重启后最多这么久盒子就会重连
+  heartbeat_s: 10.0        # last_seen_at 落库的最小间隔（别每帧都写 SD 卡）
+
+stream:
+  # 实测参考（2026-10，YOLO11s@640，ONNX CPU 3 线程）：
+  #   开发机  单帧约 66 ms（≈15 FPS）
+  #   树莓派 5 预计慢 4~6 倍 → 约 0.25~0.4 s/帧（2.5~4 FPS）
+  # 因此 target_fps 从 3 起试，**务必在设备上实测后再回调**（页面会显示实际 fps 与丢帧）。
+  # 设太高只会积压：后端单实例串行推理，超出部分只会被丢弃。
+  target_fps: 3
+  max_sessions: 1          # 单实例：同时只允许 1 路流（避免 tracker 状态串扰）
+  jpeg_quality: 70
+
+storage:
+  outputs_dir: outputs
+  uploads_dir: uploads
+  keep_uploads: false      # 处理完即删上传的原始文件（视频动辄几百 MB，SD 卡留不住）
+  max_upload_mb: 500
+  max_batch_files: 50
+  retention_days: 30       # 产物保留天数；<=0 关闭清理。启动兜底 + deploy/insect-maintenance.timer 每日执行
+  backup_keep: 14          # 数据库备份保留份数（同一张卡，防误删/写坏，不防卡坏）
+
+tracking:
+  enabled: true
+  iou_thresh: 0.3
+  max_age: 30
+
+auth:
+  jwt_expire_hours: 12
+  jwt_secret: ""           # 留空则自动生成并持久化到 backend/data/.jwt_secret
+  algorithm: HS256
+
+upload_policy: on_detect   # 田间省流量：仅检出目标时上传原图

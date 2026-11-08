@@ -1,0 +1,21 @@
+path: "D:/VScode project/\u75C5\u866B\u5BB3/InsectPestDetection/datasets/InsectPest"
+train: train/images/
+val: valid/images/
+test: test/images/
+nc: 15
+names:
+- Hellula undalis
+- Leaf Webber
+- ash weevil
+- blister beetle
+- fruit fly
+- fruit sucking moth
+- helicoverpa
+- leucinodes
+- mealy bug
+- pieris
+- plutella
+- root grubs
+- schizaphis graminum
+- uroleucon compositae
+- whitefly

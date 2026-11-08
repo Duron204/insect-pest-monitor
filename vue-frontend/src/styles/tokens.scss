@@ -1,0 +1,145 @@
+/**
+ * 设计令牌（Design Tokens）
+ * 深色数据台为默认主题，[data-theme="light"] 切换浅色。
+ * 所有颜色 / 间距 / 字体均走 CSS 变量，组件里禁止硬编码色值。
+ */
+
+:root,
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  /* ---- 底色与面板 ---- */
+  --ip-bg: #0f1712;
+  --ip-bg-deep: #0a100c;
+  --ip-panel: #16211b;
+  --ip-panel-2: #1b2822;
+  --ip-panel-3: #213026;
+  --ip-elevate: #243328;
+
+  /* ---- 线条 ---- */
+  --ip-line: #26372c;
+  --ip-line-soft: #1e2c23;
+  --ip-line-strong: #34493b;
+
+  /* ---- 文字 ---- */
+  --ip-text: #e6efe8;
+  --ip-text-2: #a9bdb0;
+  --ip-text-3: #7b9083;
+  --ip-text-inv: #0b120e;
+
+  /* ---- 主色（苔绿） ---- */
+  --ip-primary: #2f9e5f;
+  --ip-primary-hover: #37b76e;
+  --ip-primary-active: #268049;
+  --ip-primary-weak: rgba(47, 158, 95, 0.14);
+  --ip-primary-line: rgba(47, 158, 95, 0.42);
+  --ip-primary-glow: rgba(47, 158, 95, 0.25);
+
+  /* ---- 告警（琥珀） ---- */
+  --ip-warn: #e8a33d;
+  --ip-warn-weak: rgba(232, 163, 61, 0.14);
+  --ip-warn-line: rgba(232, 163, 61, 0.44);
+
+  /* ---- 语义色 ---- */
+  --ip-danger: #d9534f;
+  --ip-danger-weak: rgba(217, 83, 79, 0.14);
+  --ip-info: #4a90d9;
+  --ip-info-weak: rgba(74, 144, 217, 0.14);
+  --ip-ok: #38b06b;
+
+  /* ---- 叠层 / 阴影（克制，不用彩色大渐变） ---- */
+  --ip-shadow-sm: 0 1px 0 rgba(255, 255, 255, 0.02) inset, 0 1px 2px rgba(0, 0, 0, 0.35);
+  --ip-shadow-md: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 6px 18px rgba(0, 0, 0, 0.42);
+  --ip-inner: inset 0 1px 0 rgba(255, 255, 255, 0.025), inset 0 -12px 24px -20px rgba(0, 0, 0, 0.6);
+  --ip-mask: rgba(6, 10, 8, 0.62);
+
+  /* ---- 尺寸 ---- */
+  --ip-radius: 8px;
+  --ip-radius-sm: 5px;
+  --ip-radius-lg: 12px;
+  --ip-radius-xl: 16px;
+  --ip-gap: 14px;
+  --ip-gap-lg: 20px;
+  --ip-gap-xl: 28px;
+  --ip-header-h: 60px;
+  --ip-sidebar-w: 216px;
+  --ip-sidebar-w-collapsed: 60px;
+
+  /* ---- 字号体系 ----
+     此前组件里到处硬编码 9/10/12px（实测历史页有 530 个 12px 元素、
+     看板有 48 个 9px 元素），全站偏小且没有层级。
+     现在统一走令牌，并且**以 12px 为下限**，不再出现 9/10px。
+     注意：这些令牌只在 :root 声明一次即可，浅色主题同样命中。 */
+  --ip-fs-hero: 30px;   /* 看板/统计里的大数字 */
+  --ip-fs-page: 20px;   /* 页面标题 */
+  --ip-fs-title: 16px;  /* 卡片标题 */
+  --ip-fs-body: 14px;   /* 正文、表格 */
+  --ip-fs-sm: 13px;     /* 次要正文 */
+  --ip-fs-xs: 12px;     /* 元信息（下限） */
+  --ip-lh-tight: 1.25;
+  --ip-lh: 1.55;
+
+  /* 触控目标最小高度：田间用手机操作，过小的按钮会频繁误触 */
+  --ip-touch: 40px;
+
+  /* ---- 字体 ---- */
+  --ip-font: 'Inter', 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans GB', system-ui,
+    -apple-system, sans-serif;
+  --ip-font-mono: ui-monospace, 'Cascadia Mono', 'SFMono-Regular', Consolas, 'Liberation Mono',
+    Menlo, monospace;
+
+  /* ---- 动效（尊重 prefers-reduced-motion，见 base.scss） ---- */
+  --ip-dur-fast: 120ms;
+  --ip-dur: 200ms;
+  --ip-ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+[data-theme='light'] {
+  color-scheme: light;
+
+  --ip-bg: #f2f5f1;
+  --ip-bg-deep: #e7ece5;
+  --ip-panel: #ffffff;
+  --ip-panel-2: #f6f8f5;
+  --ip-panel-3: #eef2ec;
+  --ip-elevate: #ffffff;
+
+  --ip-line: #d8e0d6;
+  --ip-line-soft: #e5ebe3;
+  --ip-line-strong: #bcc9b9;
+
+  --ip-text: #17231b;
+  --ip-text-2: #4d6154;
+  --ip-text-3: #7c8f81;
+  --ip-text-inv: #ffffff;
+
+  --ip-primary: #24804b;
+  --ip-primary-hover: #2f9e5f;
+  --ip-primary-active: #1d6b3e;
+  --ip-primary-weak: rgba(36, 128, 75, 0.1);
+  --ip-primary-line: rgba(36, 128, 75, 0.36);
+  --ip-primary-glow: rgba(36, 128, 75, 0.18);
+
+  --ip-warn: #b9761a;
+  --ip-warn-weak: rgba(185, 118, 26, 0.12);
+  --ip-warn-line: rgba(185, 118, 26, 0.4);
+
+  --ip-danger: #c0392b;
+  --ip-danger-weak: rgba(192, 57, 43, 0.1);
+  --ip-info: #2b6fb0;
+  --ip-info-weak: rgba(43, 111, 176, 0.1);
+  --ip-ok: #24804b;
+
+  --ip-shadow-sm: 0 1px 2px rgba(23, 35, 27, 0.06);
+  --ip-shadow-md: 0 6px 18px rgba(23, 35, 27, 0.1);
+  --ip-inner: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --ip-mask: rgba(23, 35, 27, 0.42);
+}
+
+/* ---- 断点说明 ----
+   本系统只在电脑上使用，已移除手机端（< 1024 的紧凑模式与底部导航）。
+   少量 @media (max-width: 1279px) 只是为了小尺寸笔记本上不至于挤爆，
+   不属于手机端适配。
+   注意：DetectView / DashboardView / SpeciesView 里还有把多栏收成
+   少栏的 @media，那是"窗口变窄时的重排"，同样与手机端无关。
+----------------------------------------------------------- */

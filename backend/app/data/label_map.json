@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "generated_from": "datasets/InsectPest/InsectPest.yaml 的 names 顺序 + label_name.py 的 Chinese_name 映射",
+  "note": [
+    "本文件是前后端类别名称的【唯一数据源】。",
+    "已修正 label_name.py 中的两处中文译名错误（会导致不同类别共用同一个中文名，进而使计数串桶）：",
+    "  1) Hellula undalis：原文 '小菜蛾' 有误 —— 它是菜螟(cabbage webworm)；'小菜蛾' 应属于 plutella(Plutella xylostella)。",
+    "  2) mealy bug：原文 '粉虱' 有误 —— mealybug 是粉蚧；'粉虱/白粉虱' 应属于 whitefly。",
+    "原 label_name.py 因 'Hellula undalis' 与 'plutella' 都映射为 '小菜蛾'，",
+    "而 count_classes() 按中文名累加，会把两类合并计数并漏掉另一类。详见 docs/ 中的评审记录。"
+  ],
+  "classes": [
+    { "class_id": 0,  "en": "Hellula undalis",       "zh": "菜螟",       "zh_aliases": ["菜心螟", "钻心虫"] },
+    { "class_id": 1,  "en": "Leaf Webber",           "zh": "叶网蛾",     "zh_aliases": ["卷叶蛾"] },
+    { "class_id": 2,  "en": "ash weevil",            "zh": "灰象甲",     "zh_aliases": ["大象甲"] },
+    { "class_id": 3,  "en": "blister beetle",        "zh": "芫菁",       "zh_aliases": ["水泡甲虫", "斑蝥"] },
+    { "class_id": 4,  "en": "fruit fly",             "zh": "果蝇",       "zh_aliases": ["实蝇"] },
+    { "class_id": 5,  "en": "fruit sucking moth",    "zh": "吸果夜蛾",   "zh_aliases": ["吸果蛾"] },
+    { "class_id": 6,  "en": "helicoverpa",           "zh": "棉铃虫",     "zh_aliases": ["钻心虫"] },
+    { "class_id": 7,  "en": "leucinodes",            "zh": "茄果螟",     "zh_aliases": ["茄螟"] },
+    { "class_id": 8,  "en": "mealy bug",             "zh": "粉蚧",       "zh_aliases": ["蚧壳虫"] },
+    { "class_id": 9,  "en": "pieris",                "zh": "菜粉蝶",     "zh_aliases": ["菜青虫"] },
+    { "class_id": 10, "en": "plutella",              "zh": "小菜蛾",     "zh_aliases": ["吊丝虫", "两头尖"] },
+    { "class_id": 11, "en": "root grubs",            "zh": "蛴螬",       "zh_aliases": ["根蛆", "白土蚕"] },
+    { "class_id": 12, "en": "schizaphis graminum",   "zh": "禾谷缢管蚜", "zh_aliases": ["麦蚜"] },
+    { "class_id": 13, "en": "uroleucon compositae",  "zh": "合头菊蚜",   "zh_aliases": ["莴苣蚜"] },
+    { "class_id": 14, "en": "whitefly",              "zh": "白粉虱",     "zh_aliases": ["烟粉虱", "温室白粉虱"] }
+  ]
+}

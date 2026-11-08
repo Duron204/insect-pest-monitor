@@ -1,0 +1,272 @@
+/**
+ * Element Plus 深色/浅色覆盖
+ * 原则：只覆盖 Element Plus 自己的 CSS 变量，不在组件里堆 !important。
+ * 变量名参考 element-plus/theme-chalk/src/common/var.scss
+ */
+
+:root,
+[data-theme='dark'] {
+  /* 主色 */
+  --el-color-primary: var(--ip-primary);
+  --el-color-primary-light-3: #38ac6b;
+  --el-color-primary-light-5: #46bd79;
+  --el-color-primary-light-7: #1d3227;
+  --el-color-primary-light-8: #1a2b22;
+  --el-color-primary-light-9: #17241d;
+  --el-color-primary-dark-2: var(--ip-primary-active);
+
+  --el-color-success: var(--ip-ok);
+  --el-color-warning: var(--ip-warn);
+  --el-color-danger: var(--ip-danger);
+  --el-color-error: var(--ip-danger);
+  --el-color-info: var(--ip-text-2);
+
+  /* 文字 */
+  --el-text-color-primary: var(--ip-text);
+  --el-text-color-regular: var(--ip-text);
+  --el-text-color-secondary: var(--ip-text-2);
+  --el-text-color-placeholder: var(--ip-text-3);
+  --el-text-color-disabled: var(--ip-text-3);
+  --el-text-color-primary-inverse: var(--ip-text-inv);
+
+  /* 背景 */
+  --el-bg-color: var(--ip-panel);
+  --el-bg-color-page: var(--ip-bg);
+  --el-bg-color-overlay: var(--ip-panel-2);
+  --el-fill-color: var(--ip-panel-2);
+  --el-fill-color-light: var(--ip-panel-2);
+  --el-fill-color-lighter: var(--ip-panel-3);
+  --el-fill-color-extra-light: var(--ip-panel-3);
+  --el-fill-color-blank: var(--ip-panel);
+  --el-fill-color-dark: var(--ip-panel-3);
+  --el-fill-color-darker: var(--ip-elevate);
+  --el-mask-color: var(--ip-mask);
+  --el-mask-color-extra-light: rgba(6, 10, 8, 0.3);
+
+  /* 边框 */
+  --el-border-color: var(--ip-line);
+  --el-border-color-light: var(--ip-line);
+  --el-border-color-lighter: var(--ip-line-soft);
+  --el-border-color-extra-light: var(--ip-line-soft);
+  --el-border-color-dark: var(--ip-line-strong);
+  --el-border-color-darker: var(--ip-line-strong);
+  --el-border-color-hover: var(--ip-line-strong);
+  --el-border-radius-base: var(--ip-radius-sm);
+  --el-border-radius-small: 4px;
+
+  /* 阴影 */
+  --el-box-shadow: var(--ip-shadow-md);
+  --el-box-shadow-light: var(--ip-shadow-sm);
+  --el-box-shadow-lighter: var(--ip-shadow-sm);
+  --el-box-shadow-dark: var(--ip-shadow-md);
+
+  /* 组件局部 */
+  --el-disabled-bg-color: var(--ip-panel-3);
+  --el-disabled-text-color: var(--ip-text-3);
+  --el-disabled-border-color: var(--ip-line);
+  --el-overlay-color-lighter: var(--ip-mask);
+  --el-font-family: var(--ip-font);
+
+  /* ---- 字号：Element 默认 12~20px，本项目此前没覆盖，于是表格/表单
+     一路落到 12px（实测历史页 530 个 12px 元素），手机上尤其难读。
+     这里整体抬一档，并把 12px 当作下限。 ---- */
+  --el-font-size-extra-large: 19px;
+  --el-font-size-large: 16px;
+  --el-font-size-medium: 15px;
+  --el-font-size-base: 14px;
+  --el-font-size-small: 13px;
+  --el-font-size-extra-small: 12px;
+
+  /* ---- 控件尺寸：默认 32px 在手机上偏小，抬到 36px ---- */
+  --el-component-size-large: 42px;
+  --el-component-size: 36px;
+  --el-component-size-small: 32px;
+
+  /* ---- 表格：行高放松一点，减少误触与视觉拥挤 ---- */
+  --el-table-header-height: 46px;
+  --el-table-row-height: 52px;
+}
+
+[data-theme='light'] {
+  --el-color-primary-light-7: #cfe6d8;
+  --el-color-primary-light-8: #deeee4;
+  --el-color-primary-light-9: #eef6f1;
+}
+
+/* ---- 表格：关闭斑马纹，行 hover 淡绿，选中行左侧 3px 绿色指示 ---- */
+.el-table {
+  --el-table-border-color: var(--ip-line);
+  --el-table-bg-color: transparent;
+  --el-table-tr-bg-color: transparent;
+  --el-table-header-bg-color: var(--ip-panel-2);
+  --el-table-header-text-color: var(--ip-text-2);
+  --el-table-text-color: var(--ip-text);
+  --el-table-row-hover-bg-color: var(--ip-primary-weak);
+  --el-table-current-row-bg-color: var(--ip-primary-weak);
+  --el-table-expanded-cell-bg-color: transparent;
+  background: transparent;
+}
+
+.el-table th.el-table__cell {
+  font-weight: 600;
+  font-size: var(--ip-fs-xs);
+  letter-spacing: 0.04em;
+}
+
+.el-table tr.el-table__row--striped td.el-table__cell {
+  background: transparent;
+}
+
+.el-table__body tr.el-table__row.is-selected td.el-table__cell,
+.el-table__body tr.el-table__row.current-row td.el-table__cell {
+  background: var(--ip-primary-weak);
+}
+
+.el-table__body tr.el-table__row.is-selected td.el-table__cell:first-child,
+.el-table__body tr.el-table__row.current-row td.el-table__cell:first-child {
+  box-shadow: inset 3px 0 0 0 var(--ip-primary);
+}
+
+/* ---- TableV2 ---- */
+.el-table-v2 {
+  --el-table-border-color: var(--ip-line);
+  --el-table-bg-color: transparent;
+  --el-table-tr-bg-color: transparent;
+  --el-table-header-bg-color: var(--ip-panel-2);
+  --el-table-header-text-color: var(--ip-text-2);
+  --el-table-text-color: var(--ip-text);
+  --el-table-row-hover-bg-color: var(--ip-primary-weak);
+  background: transparent;
+}
+
+.el-table-v2__header-row,
+.el-table-v2__row {
+  background: transparent;
+}
+
+.el-table-v2__header-cell {
+  font-size: var(--ip-fs-xs);
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+
+/* ---- 输入类控件在深色下不要纯白底 ---- */
+.el-input__wrapper,
+.el-textarea__inner,
+.el-select__wrapper {
+  background-color: var(--ip-panel-2);
+  box-shadow: 0 0 0 1px var(--ip-line) inset;
+}
+
+.el-input__wrapper.is-focus,
+.el-select__wrapper.is-focused {
+  box-shadow: 0 0 0 1px var(--ip-primary) inset;
+}
+
+/* ---- 卡片 / 抽屉 / 弹窗 ---- */
+.el-card,
+.el-drawer,
+.el-dialog,
+.el-popper,
+.el-dropdown-menu,
+.el-message-box {
+  background-color: var(--ip-panel);
+  border-color: var(--ip-line);
+}
+
+.el-drawer__header {
+  margin-bottom: 0;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--ip-line);
+  color: var(--ip-text);
+}
+
+.el-dialog__header {
+  border-bottom: 1px solid var(--ip-line);
+  padding-bottom: 14px;
+  margin-right: 0;
+}
+
+.el-dialog__footer {
+  border-top: 1px solid var(--ip-line);
+  padding-top: 14px;
+}
+
+/* ---- 菜单：去掉默认白底，选中态用苔绿弱底 + 左侧指示 ---- */
+.el-menu {
+  --el-menu-bg-color: transparent;
+  --el-menu-hover-bg-color: var(--ip-primary-weak);
+  --el-menu-text-color: var(--ip-text-2);
+  --el-menu-active-color: var(--ip-text);
+  --el-menu-item-height: 40px;
+  border-right: none;
+  background: transparent;
+}
+
+.el-menu-item.is-active {
+  background: var(--ip-primary-weak);
+  color: var(--ip-text);
+  font-weight: 600;
+}
+
+.el-menu-item.is-active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  background: var(--ip-primary);
+}
+
+.el-menu-item {
+  position: relative;
+  border-radius: var(--ip-radius-sm);
+  margin: 2px 6px;
+}
+
+/* ---- 滑块 ---- */
+.el-slider {
+  --el-slider-main-bg-color: var(--ip-primary);
+  --el-slider-runway-bg-color: var(--ip-panel-3);
+  --el-slider-height: 4px;
+}
+
+/* ---- 标签 ---- */
+.el-tag {
+  border-radius: 4px;
+  font-family: var(--ip-font);
+}
+
+/* ---- 空状态 ---- */
+.el-empty__description p {
+  color: var(--ip-text-2);
+}
+
+/* ---- 描述列表 ---- */
+.el-descriptions {
+  --el-descriptions-item-bordered-label-background: var(--ip-panel-2);
+  background: transparent;
+}
+
+.el-descriptions__body {
+  background: transparent;
+}
+
+/* ---- 分页 ---- */
+.el-pagination {
+  --el-pagination-bg-color: transparent;
+  --el-pagination-button-bg-color: transparent;
+  --el-pagination-hover-color: var(--ip-primary);
+}
+
+/* ---- 上传 ---- */
+.el-upload-dragger {
+  background: var(--ip-panel-2);
+  border-color: var(--ip-line-strong);
+}
+
+.el-upload-dragger:hover {
+  border-color: var(--ip-primary);
+}

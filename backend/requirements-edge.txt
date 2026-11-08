@@ -1,0 +1,65 @@
+# ==========================================================
+# 边缘设备（树莓派 5 / 香橙派等）运行期依赖
+#
+#   python3 -m venv .venv
+#   .venv/bin/pip install -r backend/requirements-edge.txt
+#
+# 特点：
+#   * **不含 torch / ultralytics** —— 省下数 GB，且 ARM 上装 CUDA 版不可行
+#   * 用 opencv-python-headless：不需要 GUI/Qt 依赖（X11 库在 Lite 系统上缺失）
+#   * 用 onnxruntime 作为推理后端，config.yaml 里 backend: onnx
+#
+# 已在 Windows 上以「无 torch 环境」实测：create_app 可完成创建并预加载
+# ONNX 模型，且全程未导入 torch / ultralytics（见 tools/verify_onnx_parity.py）。
+# ==========================================================
+
+# ---- Web 框架 ----
+fastapi>=0.110
+uvicorn[standard]>=0.29
+python-multipart>=0.0.9
+pydantic>=2.5
+SQLAlchemy>=2.0
+
+# ---- 边缘代理的 WebSocket 客户端 ----
+# 本来只是 uvicorn[standard] 的**传递**依赖，这里显式写出来把隐式变显式：
+# app/services/edge_agent.py 直接 import 它，靠传递依赖等于把"能不能推流"
+# 押在别人的依赖树上（uvicorn 哪天不装它了，现象是田里的盒子推不了流，
+# 而开发和 CI 都不报错）。
+#
+# 下限定在 **14** 而不是更早的版本：代理用的是 `websockets.asyncio.client`
+# 这套新实现 —— `connect()` 收的是 `additional_headers`（旧实现叫
+# extra_headers），关闭码在 `exc.rcvd.code`（`.code` 自 13.1 起已废弃）。
+# 低于 14 时顶层 `websockets.connect` 还是旧实现，上面两个都会对不上。
+websockets>=14
+
+# ---- 鉴权 ----
+PyJWT>=2.8
+bcrypt>=4.1
+
+# ---- 配置与图像/数值 ----
+PyYAML>=6.0
+# numpy **不要加上限 <2**。两个理由，都是实测的：
+#   1) opencv 4.13 的元数据是 `numpy>=2; python_version >= "3.9"`，
+#      树莓派 OS 自带 Python 3.11，钉 1.x 会与它冲突 —— 新装一台盒子就会撞上；
+#   2) Python 3.13 上 `numpy<2` 根本没有预编译 wheel，会退回源码编译，
+#      在没有编译器的机器上直接失败。
+# 实测 numpy 2.5.2 + opencv 4.13 在本项目下工作正常。
+numpy>=1.24
+# 下限 4.10：从这一版起才支持 numpy 2。
+opencv-python-headless>=4.10
+Pillow>=10.0
+
+# ---- 报告导出 ----
+openpyxl>=3.1
+python-docx>=1.1
+
+# ---- 推理 ----
+onnxruntime>=1.17
+
+# ---- 摄像头（不进 pip，走 apt）----
+# 树莓派排线摄像头（Pi Camera Module）用 Pi OS 官方的 picamera2：
+#   sudo apt-get install -y python3-picamera2
+# 注意：它依赖 libcamera 的系统绑定，pip 装不到 venv 里。
+# 若后端报 import picamera2 失败，用带系统包的方式重建 venv：
+#   python3 -m venv --system-site-packages .venv
+# USB 摄像头不需要额外依赖（opencv 已在上面）。

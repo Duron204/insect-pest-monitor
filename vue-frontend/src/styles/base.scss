@@ -1,0 +1,372 @@
+@use './tokens.scss';
+
+/* ------------------------------ 基础重置 ------------------------------ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--ip-bg);
+  color: var(--ip-text);
+  font-family: var(--ip-font);
+  font-size: var(--ip-fs-body);
+  line-height: var(--ip-lh);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+figure {
+  margin: 0;
+}
+
+a {
+  color: var(--ip-primary);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+ul,
+ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+button {
+  font-family: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ip-primary);
+  outline-offset: 2px;
+}
+
+/* 数字一律等宽，保证表格与统计不跳动 */
+.num,
+.mono,
+table td .num {
+  font-family: var(--ip-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* ------------------------------ 滚动条 ------------------------------ */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--ip-line-strong);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ip-text-3);
+  background-clip: padding-box;
+}
+
+/* ------------------------------ 通用工具类 ------------------------------ */
+.ip-panel {
+  background: var(--ip-panel);
+  border: 1px solid var(--ip-line);
+  border-radius: var(--ip-radius-lg);
+  box-shadow: var(--ip-inner), 0 1px 2px rgba(0, 0, 0, 0.18);
+}
+
+.ip-panel--pad {
+  padding: var(--ip-gap);
+}
+
+/* 可点击的卡片：给出明确的悬停反馈，避免"看着像卡片但不知道该点" */
+.ip-panel--action {
+  cursor: pointer;
+  transition: border-color var(--ip-dur-fast) var(--ip-ease),
+    transform var(--ip-dur-fast) var(--ip-ease), box-shadow var(--ip-dur-fast) var(--ip-ease);
+
+  &:hover {
+    border-color: var(--ip-primary-line);
+    box-shadow: var(--ip-shadow-md);
+    transform: translateY(-1px);
+  }
+}
+
+/* 页面标题与副标题：全站统一，避免各页自己写 14px 当标题 */
+.ip-page-title {
+  margin: 0;
+  font-size: var(--ip-fs-page);
+  font-weight: 650;
+  line-height: var(--ip-lh-tight);
+  letter-spacing: 0.01em;
+  color: var(--ip-text);
+}
+
+.ip-page-sub {
+  margin: 2px 0 0;
+  font-size: var(--ip-fs-xs);
+  color: var(--ip-text-3);
+}
+
+/* 大数字（看板指标、统计卡） */
+.ip-hero {
+  font-family: var(--ip-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--ip-fs-hero);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+
+.ip-row {
+  display: flex;
+  align-items: center;
+}
+
+.ip-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ip-gap {
+  gap: var(--ip-gap);
+}
+
+.ip-grow {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ip-muted {
+  color: var(--ip-text-2);
+}
+
+.ip-dim {
+  color: var(--ip-text-3);
+}
+
+.ip-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ip-section-title {
+  font-size: var(--ip-fs-title);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--ip-text);
+}
+
+.ip-label {
+  font-size: var(--ip-fs-xs);
+  color: var(--ip-text-2);
+  letter-spacing: 0.02em;
+}
+
+/* 小标签（模式、状态、来源）：统一形状，避免各页各写一套 */
+.ip-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1px solid var(--ip-line);
+  background: var(--ip-panel-2);
+  color: var(--ip-text-2);
+  font-size: var(--ip-fs-xs);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.ip-chip--primary {
+  border-color: var(--ip-primary-line);
+  background: var(--ip-primary-weak);
+  color: var(--ip-primary-hover);
+}
+
+.ip-chip--warn {
+  border-color: var(--ip-warn-line);
+  background: var(--ip-warn-weak);
+  color: var(--ip-warn);
+}
+
+.ip-chip--danger {
+  border-color: var(--ip-danger);
+  background: var(--ip-danger-weak);
+  color: var(--ip-danger);
+}
+
+/* 标注图缩略图：全站的"看图"入口都用它，保证圆角/裁切/悬停一致 */
+.ip-thumb {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  border-radius: var(--ip-radius);
+  border: 1px solid var(--ip-line);
+  background: var(--ip-bg-deep);
+
+  img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform var(--ip-dur) var(--ip-ease);
+  }
+
+  &:hover img {
+    transform: scale(1.04);
+  }
+}
+
+/* 状态灯：全部由真实状态驱动 */
+.ip-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  background: var(--ip-text-3);
+}
+
+.ip-dot--ok {
+  background: var(--ip-primary);
+  box-shadow: 0 0 0 3px var(--ip-primary-weak);
+}
+
+.ip-dot--warn {
+  background: var(--ip-warn);
+  box-shadow: 0 0 0 3px var(--ip-warn-weak);
+}
+
+.ip-dot--err {
+  background: var(--ip-danger);
+  box-shadow: 0 0 0 3px var(--ip-danger-weak);
+}
+
+.ip-dot--off {
+  background: var(--ip-text-3);
+}
+
+/* ------------------------------ Element Plus 局部微调 ------------------------------ */
+.el-button + .el-button {
+  margin-left: 0;
+}
+
+.el-tabs__item {
+  font-size: var(--ip-fs-sm);
+}
+
+/* 表格：表头加一点底色与字重，正文放松行高；去掉 Element 默认的
+   纯黑分隔带来的"密密麻麻"观感 */
+.el-table {
+  --el-table-border-color: var(--ip-line-soft);
+  --el-table-header-bg-color: var(--ip-panel-2);
+  --el-table-header-text-color: var(--ip-text-2);
+  --el-table-row-hover-bg-color: var(--ip-primary-weak);
+  font-size: var(--ip-fs-body);
+
+  th.el-table__cell {
+    font-weight: 600;
+    font-size: var(--ip-fs-sm);
+  }
+}
+
+/* 表格单元格里的操作按钮排成一行、不换行，避免行高忽高忽低 */
+.el-table .cell > .ip-cell-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-wrap: nowrap;
+}
+
+/* ------------------------------ 滚动条（跟随主题） ------------------------------ */
+/* 细滚动条 + 悬停加深：默认滚动条在深色面板上是一根刺眼的灰白条。
+   Firefox 走 scrollbar-color；Chrome/Edge 走 ::-webkit-scrollbar。 */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--ip-line-strong) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: 8px;
+  background: var(--ip-line-strong);
+  border: 2px solid transparent;
+  background-clip: content-box;
+  transition: background-color var(--ip-dur-fast) var(--ip-ease);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ip-text-3);
+  background-clip: content-box;
+}
+
+/* ------------------------------ 键盘焦点可见性 ------------------------------ */
+/* :focus 只在键盘导航（Tab）时出现，鼠标点击不画环 —— 既有可达性又不吵。
+   令牌色描边 + 半透明外圈，双层保证深浅主题下都看得清。 */
+:focus-visible {
+  outline: 2px solid var(--ip-primary);
+  outline-offset: 2px;
+  border-radius: var(--ip-radius-sm);
+}
+
+/* Element 的控件在 focus-visible 时环画在控件本身上，去掉默认 outline 冲突 */
+.el-button:focus-visible,
+.el-input__wrapper:focus-visible,
+.el-select__wrapper:focus-visible {
+  outline: 2px solid var(--ip-primary);
+  outline-offset: 1px;
+}
+
+/* 可点击卡片的按压反馈：按钮"按下去"的物理感（悬停已有上浮，见 .ip-panel--action） */
+.ip-panel--action:active {
+  transform: translateY(0) scale(0.995);
+}
+/* ------------------------------ 动效降级 ------------------------------ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+

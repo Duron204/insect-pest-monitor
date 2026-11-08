@@ -1,0 +1,19 @@
+# ==========================================================
+# 维护定时器：每天跑一次清理 + 备份
+#
+# 为什么是每天：抓拍产物每天增长几 MB 量级，数据库也只有几百 KB~几 MB，
+# 一天一次足够，且不会频繁唤醒 SD 卡。Persistent=true 保证
+# 关机/断电期间错过的那次在开机后补跑 —— 现场经常直接断电。
+# ==========================================================
+[Unit]
+Description=Run insect runtime maintenance daily
+
+[Timer]
+OnBootSec=10min
+OnUnitActiveSec=1d
+AccuracySec=5min
+Persistent=true
+Unit=insect-maintenance.service
+
+[Install]
+WantedBy=timers.target

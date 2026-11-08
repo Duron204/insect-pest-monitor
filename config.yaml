@@ -1,0 +1,69 @@
+# ==========================================================
+# 病虫害智能监测系统 · 运行配置
+# 优先级：环境变量 > 本文件 > 代码内默认值
+# 修改后需重启后端生效。
+# ==========================================================
+
+server:
+  host: 0.0.0.0          # 中心端必须监听 0.0.0.0，树莓派/手机才能连进来
+  port: 8000
+  serve_frontend: true     # 由后端托管 vue-frontend/dist（同源，免 CORS）
+  reload: false            # 开发时可设 true
+
+database:
+  # 相对路径以项目根为基准
+  url: sqlite:///./backend/data/app.db
+
+inference:
+  backend: torch           # torch | onnx | ncnn | rknn | hailo（缺依赖时自动回退 torch）
+  default_model: weights/best-yolo11s.pt
+  conf: 0.25
+  iou: 0.5
+  imgsz: 640
+  device: auto             # auto | cuda:0 | cpu
+  max_det: 300
+  heatmap: false           # 默认关闭：省一次前向
+
+# 本机（边缘盒子）直连摄像头的定时抓拍。
+# 与"设备上报"是两条独立的路：这条路是盒子自己插着摄像头自己拍。
+local_camera:
+  enabled: false           # 开发机默认关；树莓派上见 deploy/config.pi.yaml
+  backend: auto            # auto | picamera2（Pi 排线摄像头）| opencv（USB）| simulated
+  device: "0"              # opencv 用：索引或 /dev/video0；picamera2 忽略
+  width: 1280
+  height: 720
+  interval_min: 30         # 定时抓拍间隔；0 = 只在页面手动抓拍
+  conf: 0.25               # 留空/0 则沿用 inference.conf
+  iou: 0.5
+  warmup_frames: 5         # 丢弃前几帧，等自动曝光稳定
+  simulated_dir: test_media  # simulated 用：循环读该目录的图片（开发/演示/测试）
+
+stream:
+  target_fps: 10           # 摄像头抽帧/回传上限，田间省流量关键参数
+  max_sessions: 1          # 单实例：同时只允许 1 个流式会话（避免 tracker 状态串扰）
+  jpeg_quality: 70
+
+storage:
+  outputs_dir: outputs
+  uploads_dir: uploads
+  keep_uploads: false      # 处理完是否保留上传的原始文件（false=处理完即删，省空间）
+  max_upload_mb: 500
+  max_batch_files: 50
+  retention_days: 30       # 产物/上传保留天数；<=0 关闭清理。启动时兜底跑一次，现场另有每日定时任务
+  backup_keep: 14          # 数据库备份保留份数（tools/backup_db.py 轮转用）
+
+tracking:
+  enabled: true            # 跟踪去重计数（unique_objects）总开关
+  iou_thresh: 0.3
+  max_age: 30              # 连续多少帧未匹配则回收 track
+
+auth:
+  jwt_expire_hours: 12
+  jwt_secret: ""           # 留空则自动生成并持久化到 backend/data/.jwt_secret
+  algorithm: HS256
+
+# 设备上传图片策略（田间省流量）：
+#   always    每张原图都上传
+#   on_detect 仅检出目标时上传原图（默认）
+#   thumb_only 只传缩略图 + 结构化结果，原图留在边缘
+upload_policy: on_detect

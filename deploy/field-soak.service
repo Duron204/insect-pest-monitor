@@ -1,0 +1,21 @@
+# ==========================================================
+# 现场巡检定时器：每 10 分钟记一行 CSV
+#
+#   sudo cp deploy/field-soak.service deploy/field-soak.timer /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now field-soak.timer
+#
+# 看结果：
+#   tail -f /var/log/insect/soak.csv
+#   journalctl -u field-soak -n 50 --no-pager
+# ==========================================================
+[Unit]
+Description=Insect field soak metrics (one shot)
+
+[Service]
+Type=oneshot
+# 与后端服务同用户，避免日志目录权限问题
+# !! 同样必须改成树莓派上的实际用户名，否则 217/USER
+User=pi
+Group=pi
+ExecStart=/usr/local/bin/field-soak.sh
+TimeoutStartSec=180

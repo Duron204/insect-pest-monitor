@@ -1,0 +1,24 @@
+# ==========================================================
+# 运行期维护（一次性任务，由 insect-maintenance.timer 触发）
+#
+#   sudo cp deploy/insect-maintenance.sh /usr/local/bin/
+#   sudo chmod +x /usr/local/bin/insect-maintenance.sh
+#   sudo cp deploy/insect-maintenance.service deploy/insect-maintenance.timer /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now insect-maintenance.timer
+# ==========================================================
+[Unit]
+Description=Insect runtime maintenance (purge artifacts + backup database)
+# 后端要先起来才能读到 config.yaml/数据库；仅排序，不强制依赖
+After=insect-backend.service
+
+[Service]
+Type=oneshot
+# !! 与 insect-backend.service 一样必须改成树莓派上的实际用户名，否则 217/USER
+User=pi
+Group=pi
+WorkingDirectory=/opt/insect/InsectPestDetection
+Environment=INSECT_PROJECT_DIR=/opt/insect/InsectPestDetection
+ExecStart=/usr/local/bin/insect-maintenance.sh
+# 备份几百 MB 的库在 SD 卡上可能偏慢，给足时间
+TimeoutStartSec=600

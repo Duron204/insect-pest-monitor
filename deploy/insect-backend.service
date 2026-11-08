@@ -1,0 +1,74 @@
+# ==========================================================
+# 树木病虫害智能监测系统 —— 后端服务单元
+#
+# 安装（路径按实际项目位置调整）：
+#   sudo cp deploy/insect-backend.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now insect-backend
+#
+# 关于看门狗：uvicorn **不实现 sd_notify**，因此这里刻意不写 WatchdogSec
+# —— 写了它会因为收不到 WATCHDOG=1 而被 systemd 反复杀掉。
+# 深度存活检测交给 insect-watchdog.timer（见同目录脚本）。
+# ==========================================================
+[Unit]
+Description=Insect Pest Detection Backend (FastAPI + ONNX Runtime)
+Documentation=file:///opt/insect/InsectPestDetection/项目文档.md
+After=network-online.target
+Wants=network-online.target
+# 反复崩溃时不要无限重启：5 分钟内超过 10 次就放弃并留下失败状态。
+# 注意这两个键属于 [Unit]；写进 [Service] 会被 systemd 判为未知键并**静默忽略**
+# （日志里表现为 "Unknown key 'StartLimitIntervalSec' in section [Service]"），
+# 结果就是 Restart=always 真的会无限重启。
+StartLimitIntervalSec=300
+StartLimitBurst=10
+
+[Service]
+Type=simple
+# !! 必须改成树莓派上的**实际用户名**：新版 Raspberry Pi OS 不再创建 pi 用户，
+#    留成 pi 会让服务以 status=217/USER（Failed to determine user credentials）失败。
+#    不确定当前用户名就敲 whoami。
+User=pi
+Group=pi
+WorkingDirectory=/opt/insect/InsectPestDetection/backend
+
+# 用环境变量指定推理后端，避免改现场机器上的 config.yaml。
+# 换板子/换模型只动这里，不动代码。
+Environment=INSECT_INFERENCE_BACKEND=onnx
+Environment=INSECT_INFERENCE_MODEL=weights/edge/best-yolo11s-640.onnx
+Environment=INSECT_INFERENCE_DEVICE=cpu
+# 树莓派 5 是 4 核：留给预处理/NMS 一些余量，别让 ORT 吃满全部核心
+Environment=INSECT_ONNX_THREADS=3
+Environment=PYTHONUNBUFFERED=1
+
+# ---- 边缘代理（把这台盒子挂到账号下，远程看结果与实时画面）----
+# 默认**注释掉**。要启用就把下面两行的 `# ` 去掉，把地址改成**中心**那台机器的地址。
+# 用环境变量而不是改 config.yaml：同一份配置可以部署到多台盒子，只有地址不同。
+#
+# 注意中心地址必须能被这台盒子拨通（先 `curl <地址>/api/health` 确认）。
+# 启用后本机的定时抓拍调度会被代理取代（同一个摄像头只能有一个调度器）。
+#Environment=INSECT_AGENT_ENABLED=1
+#Environment=INSECT_AGENT_CENTER_URL=http://192.168.1.20:8000
+# 可选：网页上显示的名字，留空则用 hostname
+#Environment=INSECT_AGENT_NAME=东头盒子
+
+ExecStart=/opt/insect/InsectPestDetection/.venv/bin/python -m uvicorn \
+    app.main:create_app --factory --host 0.0.0.0 --port 8000
+
+Restart=always
+RestartSec=5
+
+# 让 journald 能收到日志
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=insect-backend
+
+# 现场设备的基本收敛：只允许写运行期需要的目录
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=/opt/insect/InsectPestDetection/backend/data /opt/insect/InsectPestDetection/outputs /opt/insect/InsectPestDetection/uploads
+
+[Install]
+WantedBy=multi-user.target
+

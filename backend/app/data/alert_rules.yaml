@@ -1,0 +1,51 @@
+# ==========================================================
+#  告警规则
+#  每次检测任务完成后评估一次；命中则写入 alerts 表并在前端红点提示。
+#
+#  字段说明：
+#    name       规则名（写入 alerts.rule）
+#    metric     unique_objects（去重虫数，推荐） | total_objects（框数）
+#    window     时间窗内累计：本次任务 | 24h | 7d
+#    plot_id    仅对某地块生效；留空表示全部地块
+#    class_name 仅统计某虫种（中文名，取自 label_map.json）；留空表示全部
+#    threshold  阈值（>= 触发）
+#    level      info | warn | critical
+#    message    可选自定义文案，留空则自动生成
+# ==========================================================
+rules:
+  - name: 单次检出虫量偏高
+    metric: unique_objects
+    window: 本次任务
+    threshold: 30
+    level: warn
+    message: 本次检出虫数达到 {value} 头，建议实地核查。
+
+  - name: 单次检出虫量严重
+    metric: unique_objects
+    window: 本次任务
+    threshold: 80
+    level: critical
+    message: 本次检出虫数达 {value} 头，已达严重程度，建议尽快防治。
+
+  - name: 24 小时内累计偏高
+    metric: unique_objects
+    window: 24h
+    threshold: 150
+    level: warn
+    message: 近 24 小时累计检出 {value} 头，注意趋势。
+
+  - name: 小菜蛾单次高发
+    metric: unique_objects
+    window: 本次任务
+    class_name: 小菜蛾
+    threshold: 20
+    level: warn
+    message: 小菜蛾单次检出 {value} 头，该虫抗药性强，注意轮换用药。
+
+# 推送目标（配置项已就位，但**后端目前没有任何发送代码**：
+# 这里填了 url 也不会推出去，只影响看板上的"外部推送已开启/未开启"字样。
+# 真要推送需先实现发送逻辑，见 README §10 路线图）
+webhook:
+  enabled: false
+  url: ""            # 企业微信/钉钉机器人地址
+  timeout_s: 5

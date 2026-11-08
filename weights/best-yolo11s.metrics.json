@@ -1,0 +1,7 @@
+{
+  "map50": 0.94935,
+  "map50_95": 0.76759,
+  "epochs": 136,
+  "source_run": "runs/detect/train_yolo11s_InsectPest",
+  "note": "该次训练 results.csv 的历史最优值；本文件供模型注册表读取（权重已从 runs 目录移出）"
+}

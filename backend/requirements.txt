@@ -1,0 +1,55 @@
+# ==========================================================
+# Web 后端依赖（完整开发环境）
+# 安装时务必配合 constraints.txt，避免顺带升级桌面端/训练栈：
+#   pip install -r backend/requirements.txt -c backend/constraints.txt
+#
+# 修正记录（实测发现，非推测）：
+#   本文件原先漏了 PyYAML / numpy / opencv / Pillow。在开发机上它们是由
+#   torch / ultralytics 顺带装上的，所以看不出问题；但在**干净的边缘环境**
+#   里会直接 ImportError：
+#     app/config.py    -> import yaml        （PyYAML）
+#     routers/auth.py  -> from PIL import Image （Pillow）
+#     app 处处          -> cv2 / numpy
+#   已补齐。边缘设备请改用 backend/requirements-edge.txt。
+#
+# 说明：这里**不包含** torch / ultralytics —— 桌面端与训练栈沿用既有
+#       D:\python\envs\yolov5 环境，见 backend/constraints.txt。
+# ==========================================================
+
+# ---- Web 框架 ----
+fastapi>=0.110
+uvicorn[standard]>=0.29
+python-multipart>=0.0.9
+SQLAlchemy>=2.0
+
+# ---- 鉴权 ----
+PyJWT>=2.8
+bcrypt>=4.1
+
+# ---- 配置与图像/数值（此前漏列）----
+PyYAML>=6.0
+# numpy **不能加上限 <2**：opencv-python 4.13 的元数据写的是
+# `numpy>=2; python_version >= "3.9"` —— 钉在 1.x 上会与它直接冲突
+# （pip 解析失败，或被迫退回很旧的 opencv）。实测 numpy 2.5.2 +
+# opencv 4.13 在本项目下正常工作，遂放开上限。
+numpy>=1.24
+# 下限提到 4.10：那一版起才支持 numpy 2。写 >=4.8 的话在 Python ≥3.9 上
+# 会被解析成 4.13，与上面旧的 numpy<2 打架 —— 这是踩过的坑。
+opencv-python>=4.10
+Pillow>=10.0
+# pydantic 此前只在 requirements-edge.txt 里列了。FastAPI 会把它作为依赖
+# 带上，但项目里到处是 `from pydantic import ...`，显式写出来才对。
+pydantic>=2.5
+
+# ---- 报告导出 ----
+openpyxl>=3.1
+python-docx>=1.1
+
+# ---- 测试 ----
+pytest>=8.0
+pytest-asyncio>=0.23
+httpx>=0.27
+
+# ---- 边缘推理（阶段 C；缺失时后端自动回退 TorchBackend）----
+# 树莓派等设备请直接使用 requirements-edge.txt。
+# onnxruntime>=1.17

@@ -1,0 +1,74 @@
+# 持续集成：每次推送/PR 都跑后端测试与前端检查。
+#
+# 为什么需要它：此前这些检查全靠人工在本机执行（`pytest`、`npm run build`），
+# 改完不跑就可能把问题带到现场。
+#
+# 两条重要约定：
+#   1. **权重与数据集不进仓库**（二进制，见 .gitignore），所以 CI 上没有它们。
+#      需要真模型的用例已用 `skipif` 显式跳过，并在测试报告里写明原因 ——
+#      不是"为了让 CI 变绿而放水"，本机跑仍然是全量执行。
+#   2. 后端装 **CPU 版 torch**：CI 没有 GPU，CPU 轮子能省下几 GB 下载。
+name: CI
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: 后端（pytest）
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: |
+            backend/requirements.txt
+            backend/constraints.txt
+
+      - name: 安装依赖
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -c constraints.txt
+          pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cpu
+          pip install 'ultralytics==8.3.203'
+
+      - name: 跑测试
+        run: python -m pytest tests/ -q -rs
+
+  frontend:
+    name: 前端（类型检查 / 单测 / 构建）
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: vue-frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: vue-frontend/package-lock.json
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 类型检查
+        run: npm run type-check
+
+      - name: 单元测试
+        run: npm run test
+
+      - name: 构建
+        run: npm run build

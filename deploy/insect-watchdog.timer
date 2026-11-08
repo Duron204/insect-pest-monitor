@@ -1,0 +1,17 @@
+# ==========================================================
+# 看门狗定时器：每 2 分钟探测一次健康接口。
+#
+# 间隔的取舍：太密会在推理繁忙时误判；太疏则故障发现得晚。
+# 配合脚本内「连续 3 次失败才重启」，实际容忍约 6 分钟的异常。
+# ==========================================================
+[Unit]
+Description=Run insect backend health watchdog every 2 minutes
+
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=2min
+AccuracySec=15s
+Unit=insect-watchdog.service
+
+[Install]
+WantedBy=timers.target

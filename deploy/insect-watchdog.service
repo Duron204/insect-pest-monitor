@@ -1,0 +1,21 @@
+# ==========================================================
+# 看门狗：由 insect-watchdog.timer 定期触发
+#
+#   sudo cp deploy/insect-watchdog.sh /usr/local/bin/
+#   sudo chmod +x /usr/local/bin/insect-watchdog.sh
+#   sudo cp deploy/insect-watchdog.service deploy/insect-watchdog.timer /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now insect-watchdog.timer
+#
+# 手工跑一次看效果：
+#   sudo systemctl start insect-watchdog.service
+#   journalctl -u insect-watchdog -n 20 --no-pager
+# ==========================================================
+[Unit]
+Description=Insect backend health watchdog (one shot)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/insect-watchdog.sh
+# 脚本自身很快返回；给它一个上限，避免卡死的 curl 拖住 timer
+TimeoutStartSec=60

@@ -1,0 +1,17 @@
+# ==========================================================
+# 现场巡检定时器：每 10 分钟一次
+#
+# 10 分钟的取舍：足够密到能看出降频/内存泄漏的趋势，
+# 又不会让采集本身成为负担（每次只发一个 health 请求）。
+# ==========================================================
+[Unit]
+Description=Run insect field soak metrics every 10 minutes
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=10min
+AccuracySec=30s
+Unit=field-soak.service
+
+[Install]
+WantedBy=timers.target

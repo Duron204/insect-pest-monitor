@@ -1,0 +1,92 @@
+# ==========================================================
+# 病虫害智能监测系统 - Git 忽略规则
+# 原则：忽略「可重新生成的依赖」与「体积大的二进制/运行期产物」；
+#       保留「不可再生的标注数据」与「训练指标记录」。
+#       大文件（权重/数据集图像/视频）由 _backup_*.zip 兜底。
+# ==========================================================
+
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+env/
+# 阶段 C 的边缘验证环境（与树莓派一致的免 torch 依赖集，约 358 MB，
+# 绝不能进版本库）。注意 .venv/ 这个写法**匹配不到** .venv-edge，
+# 必须单独列出或用通配。
+.venv-edge/
+.venv-*/
+.python-version
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# ---------- Node / 前端 ----------
+node_modules/
+vue-frontend/dist/
+*.tsbuildinfo
+.vite/
+.eslintcache
+coverage/
+
+# ---------- 运行期产物 ----------
+outputs/
+uploads/
+logs/
+*.log
+# backend/data 整个目录都是运行期数据：SQLite 库 + JWT 密钥 + 头像副本。
+# 注意 .gitignore 无法取消【已被跟踪】的文件，清理需用：
+#   git rm -r --cached backend/data
+backend/data/
+*.sqlite3
+
+# 桌面端保存的产物（直接写 cwd）
+pic_*.png
+video_*.avi
+table_data_*.csv
+
+# ---------- 大二进制：模型权重 ----------
+# 由 _backup_*.zip 与 runs/detect/*/weights/ 兜底
+*.pt
+*.onnx
+*.engine
+*.rknn
+*.hef
+*.tflite
+*.ncnn.bin
+*.ncnn.param
+weights/edge/
+
+# ---------- 大二进制：训练产物 ----------
+runs/**/weights/
+runs/**/*.jpg
+runs/**/*.png
+
+# ---------- 大二进制：媒体与数据集图像 ----------
+# 注意：只忽略图像，**保留 labels/*.txt 标注**（不可再生且体积很小）
+datasets/**/images/
+# ultralytics 的标签解析缓存：重训时会自动重建，属生成物，不该进版本库
+# （原先 train/valid 两份共 2.4MB 被跟踪了，已 git rm --cached）
+datasets/**/labels.cache
+test_media/*.mp4
+test_media/*.avi
+*.avi
+*.mp4
+_backup_*.zip
+*.zip
+
+# ---------- 归档的技术债 ----------
+# 注意：必须锚定到仓库根，否则会连 docs/legacy/ 一起忽略
+# （曾经就因为这个，README 引用的三份文档一直没进版本库）
+/legacy/
+
+# ---------- IDE / OS ----------
+.idea/
+.vscode/
+Thumbs.db
+desktop.ini
+.DS_Store
