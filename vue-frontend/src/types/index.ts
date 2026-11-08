@@ -630,3 +630,83 @@ export interface ApiErrorShape {
   message?: string
   code?: string
 }
+
+/* ------------------------------- AI 助手 ------------------------------- */
+
+export interface AiStatusOut {
+  enabled: boolean
+  configured: boolean
+  model: string
+}
+
+export interface AiChatHistoryMessage {
+  role: 'user' | 'assistant'
+  content: string
+}
+
+export interface AiCitationOut {
+  index: number
+  class_id: number
+  zh_name: string
+  en_name: string
+  field: string
+  field_label: string
+  text: string
+  score: number
+}
+
+/** SSE 事件（POST /api/ai/chat 流式返回） */
+export type AiChatEvent =
+  | { type: 'delta'; text: string }
+  | { type: 'done'; citations: AiCitationOut[]; elapsed_ms: number }
+  | { type: 'error'; message: string }
+
+/* ---------------- AI 助手·会话 / 用量 / 报告 ---------------- */
+
+export interface AiConversationOut {
+  id: number
+  title: string
+  message_count: number
+  created_at: string
+  updated_at: string
+}
+
+export interface AiMessageOut {
+  id: number
+  role: 'user' | 'assistant'
+  content: string
+  citations: AiCitationOut[]
+  elapsed_ms: number | null
+  total_tokens: number | null
+  created_at: string
+}
+
+export interface AiUsageDayOut {
+  day: string
+  calls: number
+  total_tokens: number
+}
+
+export interface AiUsageSummaryOut {
+  calls: number
+  conversations: number
+  reports: number
+  prompt_tokens: number
+  completion_tokens: number
+  total_tokens: number
+  avg_elapsed_ms: number
+  by_day: AiUsageDayOut[]
+}
+
+export interface AiReportSummaryOut {
+  id: number
+  range_token: string
+  title: string
+  total_tokens: number | null
+  elapsed_ms: number | null
+  created_at: string
+}
+
+export interface AiReportOut extends AiReportSummaryOut {
+  content: string
+}

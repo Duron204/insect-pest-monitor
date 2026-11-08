@@ -14,6 +14,7 @@ interface NavItem {
 /** 导航项与 router 中已实现的页面一一对应（地块管理仍未做界面，故不放死链）。 */
 const NAV_ITEMS: NavItem[] = [
   { name: 'detect', title: '检测台', icon: 'Aim', hint: '单图 / 批量 / 视频 / 摄像头' },
+  { name: 'assistant', title: 'AI 助手', icon: 'Spark', hint: '知识库检索 + 实时虫情问答' },
   { name: 'history', title: '历史记录', icon: 'Files', hint: '任务列表与报告导出' },
   { name: 'dashboard', title: '统计看板', icon: 'DataLine', hint: '类别分布与趋势' },
   { name: 'alerts', title: '告警中心', icon: 'Bell', hint: '阈值告警与确认' },
@@ -115,6 +116,16 @@ function go(name: string): void {
                 stroke-width="1.4"
                 stroke-linecap="round"
               />
+            </svg>
+            <svg v-else-if="item.icon === 'Spark'" viewBox="0 0 20 20" width="17" height="17">
+              <path
+                d="M10 2.6l1.3 3.4 3.4 1.3-3.4 1.3L10 12l-1.3-3.4L5.3 7.3l3.4-1.3z"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.4"
+                stroke-linejoin="round"
+              />
+              <path d="M14.6 12.4l.7 1.7 1.7.7-1.7.7-.7 1.7-.7-1.7-1.7-.7 1.7-.7z" fill="currentColor" opacity="0.7" />
             </svg>
             <svg v-else-if="item.icon === 'Notebook'" viewBox="0 0 20 20" width="17" height="17">
               <path

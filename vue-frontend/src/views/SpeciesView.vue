@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import { ElButton, ElInput } from 'element-plus'
 import SpeciesCard from '@/components/species/SpeciesCard.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
@@ -11,6 +12,8 @@ import type { SpeciesOut } from '@/types'
 
 /** 声明是否展开：记住选择；默认展开（这是需要先读的提示，不该默认藏起来） */
 const DISCLAIMER_KEY = 'ip_species_disclaimer_open'
+
+const route = useRoute()
 
 const species = ref<SpeciesOut[]>([])
 const disclaimer = ref<string[]>([])
@@ -54,7 +57,15 @@ async function load(): Promise<void> {
   }
 }
 
-onMounted(load)
+onMounted(async () => {
+  await load()
+  // AI 助手的引用跳转：?class=3 → 用中文名预填搜索，直接定位到那张卡
+  const wanted = Number(route.query.class)
+  if (Number.isInteger(wanted) && species.value.length > 0) {
+    const target = species.value.find((item) => item.class_id === wanted)
+    if (target) keyword.value = target.zh_name
+  }
+})
 
 function onEmptyAction(): void {
   if (species.value.length === 0) {

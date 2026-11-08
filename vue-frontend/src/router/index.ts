@@ -23,6 +23,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '检测台', icon: 'Aim' }
       },
       {
+        path: 'assistant',
+        name: 'assistant',
+        component: () => import('@/views/AssistantView.vue'),
+        meta: { title: 'AI 助手', icon: 'Spark' }
+      },
+      {
         path: 'history',
         name: 'history',
         component: () => import('@/views/HistoryView.vue'),

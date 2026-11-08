@@ -5,6 +5,7 @@ import { ElButton, ElTooltip } from 'element-plus'
 import ClassPieChart from '@/components/charts/ClassPieChart.vue'
 import HourBarChart from '@/components/charts/HourBarChart.vue'
 import TrendLineChart from '@/components/charts/TrendLineChart.vue'
+import AiReportDrawer from '@/components/ai/AiReportDrawer.vue'
 import ErrorBanner from '@/components/common/ErrorBanner.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import StatCard from '@/components/common/StatCard.vue'
@@ -19,6 +20,7 @@ const router = useRouter()
 const models = useModelsStore()
 
 const range = ref<StatsRange>('7d')
+const reportDrawerOpen = ref(false)
 const summary = ref<StatsSummaryOut | null>(null)
 const loading = ref(false)
 const error = ref<string | null>(null)
@@ -144,8 +146,19 @@ onMounted(() => {
         <ElButton size="small" :loading="loading" aria-label="刷新统计数据" @click="load">
           刷新
         </ElButton>
+        <!-- 数据看完顺手出报告：同一段工作流放在同一个界面 -->
+        <ElButton
+          size="small"
+          type="primary"
+          aria-label="生成 AI 诊断报告"
+          @click="reportDrawerOpen = true"
+        >
+          AI 诊断报告
+        </ElButton>
       </div>
     </header>
+
+    <AiReportDrawer v-model="reportDrawerOpen" />
 
     <ErrorBanner :message="error" title="统计加载失败" @close="error = null" />
 
